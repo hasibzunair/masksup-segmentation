@@ -62,3 +62,57 @@ class ISIC2018_dataloader(Dataset):
         
         sample = {'image': image, 'mask': mask}
         return sample
+    
+    
+    
+
+class ISIC2018Masked_dataloader(Dataset):
+    def __init__(self, data_folder, is_train=True):
+        self.is_train = is_train
+        self._data_folder = data_folder
+        self.build_dataset()
+
+    def build_dataset(self):
+        self._input_folder = os.path.join(self._data_folder, 'ISIC2018_Task1-2_Training_Input')
+        self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
+        self._images = sorted(glob.glob(self._input_folder + "/*.jpg"))
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))
+        
+        self.train_images, self.test_images, self.train_scribbles, self.test_scribbles = train_test_split(self._images, self._scribbles[:len(self._images)], 
+                                                                            test_size=0.1, shuffle=False, random_state=0)
+        
+    def __len__(self):
+        if self.is_train:
+            return len(self.train_images)
+        else:
+            return len(self.test_images)
+
+    def __getitem__(self, idx):
+        
+        if self.is_train:
+            img_path = self.train_images[idx]
+            mask_path = self._scribbles[np.random.randint(12000)] # pick randomly from scribbles
+        else:
+            img_path = self.test_images[idx]
+            mask_path = self.test_scribbles[idx]
+            
+        
+        image = Image.open(img_path).convert('RGB')
+        mask = Image.open(mask_path).convert('P')
+        
+        transforms_image = transforms.Compose([transforms.Resize((192, 256)),
+                                             transforms.ToTensor(),
+                                            transforms.Normalize((0.5, 0.5, 0.5),
+                                                (0.5, 0.5, 0.5))])
+        
+        transforms_mask = transforms.Compose([transforms.Resize((192, 256)),
+                                             transforms.ToTensor()])
+        
+        image = transforms_image(image)
+        mask = transforms_mask(mask)
+        
+        # Partial image
+        partial_image = image * mask
+        
+        sample = {'image': image, 'mask': mask, 'partial_image': partial_image}
+        return sample
