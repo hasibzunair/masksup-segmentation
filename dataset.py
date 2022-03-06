@@ -112,7 +112,12 @@ class ISIC2018Masked_dataloader(Dataset):
         mask = transforms_mask(mask)
         
         # Partial image
-        partial_image = image * mask
+        partial_image1 = image * mask
+        partial_image2 = image * (1 - mask)
         
-        sample = {'image': image, 'mask': mask, 'partial_image': partial_image}
+        
+        sample = {'image': image, 
+                  'mask': mask, 
+                  'partial_image1': partial_image1,
+                  'partial_image2': partial_image2}
         return sample
