@@ -66,9 +66,7 @@ class EAGCN(nn.Module):
         sigma = seg_c.view(n, self.num_s, -1).contiguous()
         sigma_T = seg_c.view(n, -1, self.num_s).contiguous()
         sigma_out = torch.bmm(sigma_T, sigma)
-        
-        #import ipdb; ipdb.set_trace()
-        
+
         edge_m = seg * edge
 
         maxpool_s, _ = torch.max(seg, dim=1)

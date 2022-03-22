@@ -131,6 +131,58 @@ class build_unet(nn.Module):
         """ Classifier """
         outputs = self.outputs(d4)
         return outputs
+    
+
+class COIN_Unet(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        """ Encoder """
+        self.e1 = encoder_block(3, 64)
+        self.e2 = encoder_block(64, 128)
+        self.e3 = encoder_block(128, 256)
+        self.e4 = encoder_block(256, 512)
+
+        """ Bottleneck """
+        self.b = conv_block(512, 1024)
+
+        """ Decoder """
+        self.d1 = decoder_block(1024, 512)
+        self.d2 = decoder_block(512, 256)
+        self.d3 = decoder_block(256, 128)
+        self.d4 = decoder_block(128, 64)
+
+        """ Classifier """
+        self.outputs = nn.Conv2d(64, 3, kernel_size=1, padding=0)
+        
+        # NOTE: 
+        # nn.Conv2d(64, 1, kernel_size=1, padding=0) is mathematically same as 
+        # nn.Conv2d(64, 1, kernel_size=3, stride=1, padding=1)
+
+    def forward_once(self, inputs):
+        """ Encoder """
+        s1, p1 = self.e1(inputs)
+        s2, p2 = self.e2(p1)
+        s3, p3 = self.e3(p2)
+        s4, p4 = self.e4(p3)
+
+        """ Bottleneck """
+        b = self.b(p4)
+
+        """ Decoder """
+        d1 = self.d1(b, s4)
+        d2 = self.d2(d1, s3)
+        d3 = self.d3(d2, s2)
+        d4 = self.d4(d3, s1)
+
+        """ Classifier """
+        outputs = self.outputs(d4)
+        return outputs
+    
+    def forward(self, x1, x2):
+        out1 = self.forward_once(x1)
+        out2 = self.forward_once(x2)
+        return out1, out2
 #########################################################################################    
 
 
@@ -742,5 +794,5 @@ class ODOC_seg_edge(nn.Module):
         edge = torch.nn.functional.interpolate(edge_feat, size=(32, 32), mode='bilinear', align_corners=True)  
 
         seg_output = self.seg_layer(x4_rfb, x3_rfb, x2_rfb, edge)
-        seg_output = torch.nn.functional.interpolate(seg_output, size=(256, 256), mode='bilinear')        
+        seg_output = torch.nn.functional.interpolate(seg_output, size=(256, 256), mode='bilinear', align_corners=True)        
         return seg_output
