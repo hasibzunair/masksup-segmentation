@@ -36,7 +36,7 @@ torch.backends.cudnn.benchmark = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "unet_cb_isic2018"
+EXPERIMENT_NAME = "unet_cb_isic2018_100epochs"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -126,7 +126,7 @@ def train_context_branch(model, epoch):
         loss2 = criterion(output2.float(), target.float())
         
         alpha = 1
-        beta = 1
+        beta = 1 #0.2
         loss = alpha * loss1 + beta * loss2
         
         # Update
@@ -227,7 +227,7 @@ score = 0
 best_score = 0
 
 start_time = time.time()
-N_EPOCHS = 30 # Do 100 or more!
+N_EPOCHS = 100
 for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
