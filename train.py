@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, utils
 from torch.autograd import Variable
 
-from datasets import ISIC2018_dataloader
+from dataset import ISIC2018_dataloader
 from models import build_unet
 
 """Training script"""
@@ -78,7 +78,7 @@ criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELo
 
 ########## Trainer and validation functions ##########
 
-def train(model, epoch):
+def train_coin(model, epoch):
     """
     Builds on previous train_siamseg.ipynb notebook. Implements enforce similarity part.
     
@@ -108,9 +108,9 @@ def train(model, epoch):
         # more...
         loss = loss1 + loss2
         
-        alpha = 0.8
-        beta = 0.2
-        gamma = 0.5
+        alpha = 1
+        beta = 1
+        gamma = 1
         loss = alpha * loss1 + beta * loss2
         
         # Update
@@ -170,10 +170,10 @@ score = 0
 best_score = 0
 
 start_time = time.time()
-N_EPOCHS = 30 # Do 100 or more!
+N_EPOCHS = 3 # Do 100 or more!
 for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
-    train(model, epoch)
+    train_coin(model, epoch)
     score = test(model)
     # Save best model
     if score > best_score:
