@@ -9,8 +9,10 @@ from sklearn.model_selection import train_test_split
 from PIL import Image
 from torch.utils.data import Dataset
 
-# Set random seed
-np.random.seed(0)
+
+# Reproducibility
+#os.environ['PYTHONHASHSEED'] = str(0)
+#np.random.seed(0)
 
 """Dataset classes"""
 

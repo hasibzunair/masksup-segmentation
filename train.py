@@ -96,7 +96,7 @@ def train_coin(model, epoch):
         # This is siamese style U-Net
         # Pass two inputs through the same model to get two outputs
         output1 = model.forward(data1.float())
-        output2 = model.forward(data2.float())
+        #output2 = model.forward(data2.float())
         
         
         # TODO: (partial_image2 use)
@@ -104,13 +104,13 @@ def train_coin(model, epoch):
 
         # Compute loss based on two outputs
         loss1 = criterion(output1.float(), target.float())
-        loss2 = criterion(output2.float(), target.float())
+        #loss2 = criterion(output2.float(), target.float())
         #loss3 = criterion(output1.float(), output2.float())
         
         # TODO: 
         # 1) loss2 high weight
         # more...
-        loss = loss1 + loss2
+        loss = loss1 #+ loss2
         
         # alpha = 0.5
         # beta = 0.5
