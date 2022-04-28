@@ -174,7 +174,7 @@ score = 0
 best_score = 0
 
 start_time = time.time()
-N_EPOCHS = 3 # Do 100 or more!
+N_EPOCHS = 30 # Do 100 or more!
 for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     train_coin(model, epoch)
@@ -197,6 +197,7 @@ end_time = time.time()
 print("--- Time taken to train : %s hours ---" % ((end_time - start_time)//3600))
 print("--- Time taken to train : %s mins ---" % ((end_time - start_time)//60))
 
+print("Max jaccard and dice: ", max(jacs)," and ", max(dices))
 
 ########## Save logs ##########
 report = {}
