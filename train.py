@@ -112,10 +112,10 @@ def train_coin(model, epoch):
         # more...
         loss = loss1 + loss2
         
-        alpha = 1
-        beta = 1
-        gamma = 1
-        loss = alpha * loss1 + beta * loss2
+        # alpha = 0.5
+        # beta = 0.5
+        # gamma = 1
+        # loss = alpha * loss1 + beta * loss2
         
         # Update
         optimizer.zero_grad()
