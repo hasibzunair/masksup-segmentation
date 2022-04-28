@@ -18,7 +18,8 @@ from models import build_unet
 
 """Training script"""
 
-# Reproducibility
+########## Reproducibility ##########
+
 random.seed(0)
 os.environ['PYTHONHASHSEED'] = str(0)
 np.random.seed(0)
@@ -29,11 +30,13 @@ if torch.cuda.is_available():
 torch.backends.cudnn.benchmark = True
 
 
+########## Setup ##########
+
 # Device
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "tester"
+EXPERIMENT_NAME = "unet_cb_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -55,6 +58,12 @@ test_dataset = ISIC2018_dataloader("datasets/ISIC2018", is_train=False)
 
 train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
+
+dt = next(iter(train_dataloader))
+x = dt["image"]
+y = dt["mask"]
+
+print("Sample: ", x[0][:,:10][0][0][:3])
 
 
 ########## Get model ##########
@@ -81,6 +90,50 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 
 ########## Trainer and validation functions ##########
+
+def train(model, epoch):
+    """
+    Trains a segmentation model.
+    """
+    model.train()
+    for batch_idx, data in enumerate(train_dataloader):
+        data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
+        output1 = model.forward(data1.float())
+       
+        # Compute loss based on two outputs
+        loss = criterion(output1.float(), target.float())
+        
+        # Update
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+
+def train_context_branch(model, epoch):
+    """
+    Trains segmentation model using a context branch in a siamese style. 
+    """
+    model.train()
+    for batch_idx, data in enumerate(train_dataloader):
+        data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
+        # This is siamese style U-Net
+        # Pass two inputs through the same model to get two outputs
+        output1 = model.forward(data1.float())
+        output2 = model.forward(data2.float())
+        
+        # Compute loss based on two outputs
+        loss1 = criterion(output1.float(), target.float())
+        loss2 = criterion(output2.float(), target.float())
+        
+        alpha = 1
+        beta = 1
+        loss = alpha * loss1 + beta * loss2
+        
+        # Update
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
 
 def train_coin(model, epoch):
     """
@@ -110,16 +163,16 @@ def train_coin(model, epoch):
         # TODO: 
         # 1) loss2 high weight
         # more...
-        loss = loss1 #+ loss2
+        #loss = loss1 + loss2
         
-        # alpha = 0.5
-        # beta = 0.5
-        # gamma = 1
-        # loss = alpha * loss1 + beta * loss2
+#         alpha = 0.8
+#         beta = 0.2
+#         gamma = 1
+#         loss = alpha * loss1 + beta * loss2
         
         # Update
         optimizer.zero_grad()
-        loss.backward()
+        loss1.backward()
         optimizer.step()
         # if batch_idx % 10 == 0:
         #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -176,14 +229,25 @@ best_score = 0
 start_time = time.time()
 N_EPOCHS = 30 # Do 100 or more!
 for epoch in range(1, N_EPOCHS):
+    # Train and eval
     print("Epoch: {}".format(epoch))
-    train_coin(model, epoch)
+    # Trainer type
+    train_context_branch(model, epoch)
     score = test(model)
+    
     # Save best model
     if score > best_score:
         print("Saving model at dice={:.3f}".format(score))
         torch.save(model.state_dict(), '{}/{}.pth'.format(LOG_PATH, EXPERIMENT_NAME))
         best_score = score
+
+end_time = time.time()
+print("--- Time taken to train : %s hours ---" % ((end_time - start_time)//3600))
+print("--- Time taken to train : %s mins ---" % ((end_time - start_time)//60))
+
+print("Max jaccard and dice: ", max(jacs)," and ", max(dices))
+
+########## Save logs ##########
 
 # Save losses
 losses = np.array(losses)
@@ -193,13 +257,6 @@ np.savetxt("{}/{}_jacs.txt".format(LOG_PATH, EXPERIMENT_NAME), jacs, delimiter="
 dices = np.array(dices)
 np.savetxt("{}/{}_dices.txt".format(LOG_PATH, EXPERIMENT_NAME), dices, delimiter=",")
 
-end_time = time.time()
-print("--- Time taken to train : %s hours ---" % ((end_time - start_time)//3600))
-print("--- Time taken to train : %s mins ---" % ((end_time - start_time)//60))
-
-print("Max jaccard and dice: ", max(jacs)," and ", max(dices))
-
-########## Save logs ##########
 report = {}
 
 report['Max Jaccard = '] = "{:.5f}".format(max(jacs))
@@ -215,6 +272,7 @@ with open("{}/{}_bests.txt".format(LOG_PATH, EXPERIMENT_NAME), 'w') as f:
 f.close()
 
 ########## Plot curves ##########
+
 # b, g, r, y, o, -g, -m,
 plt.figure(figsize=(15, 5))
 plt.subplot(121)
