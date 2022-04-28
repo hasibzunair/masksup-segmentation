@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, utils
 from torch.autograd import Variable
 
+from helpers import Logger
 from dataset import ISIC2018_dataloader
 from models import build_unet
 
@@ -27,10 +28,10 @@ if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
 
+
 # Device
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
-
 
 EXPERIMENT_NAME = "tester"
 
@@ -43,7 +44,10 @@ if not os.path.exists(os.path.join(ROOT_DIR, "logs")):
 if not os.path.exists(LOG_PATH):
     os.mkdir(LOG_PATH)
     
-    
+# save config in log file
+sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
+
+
 ########## Load data ##########
 
 train_dataset = ISIC2018_dataloader("datasets/ISIC2018")
