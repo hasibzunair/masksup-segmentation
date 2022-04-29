@@ -36,7 +36,7 @@ torch.backends.cudnn.benchmark = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "unet_isic2018_100epochs"
+EXPERIMENT_NAME = "unet_cb_ts_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -154,8 +154,8 @@ def train_context_branch_with_task_sim(model, epoch):
         loss2 = criterion(output2.float(), target.float())
         loss3 = criterion_mse(output1.float(), output2.float())
         # Loss coefficients
-        alpha = 0.8
-        beta = 0.2
+        alpha = 1
+        beta = 1
         gamma = 1
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
@@ -166,49 +166,49 @@ def train_context_branch_with_task_sim(model, epoch):
         optimizer.step()
         
         
-def train_coin(model, epoch):
-    """
-    Builds on previous train_siamseg.ipynb notebook. Implements enforce similarity part.
+# def train_coin(model, epoch):
+#     """
+#     Builds on previous train_siamseg.ipynb notebook. Implements enforce similarity part.
     
-    TODO: 
-    - partial_image2 use
-    - mask increases while training gradually
-    """
-    model.train()
-    for batch_idx, data in enumerate(train_dataloader):
-        data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
-        # This is siamese style U-Net
-        # Pass two inputs through the same model to get two outputs
-        output1 = model.forward(data1.float())
-        #output2 = model.forward(data2.float())
+#     TODO: 
+#     - partial_image2 use
+#     - mask increases while training gradually
+#     """
+#     model.train()
+#     for batch_idx, data in enumerate(train_dataloader):
+#         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
+#         # This is siamese style U-Net
+#         # Pass two inputs through the same model to get two outputs
+#         output1 = model.forward(data1.float())
+#         #output2 = model.forward(data2.float())
         
         
-        # TODO: (partial_image2 use)
-        #output3 = model.forward(data3.float())
+#         # TODO: (partial_image2 use)
+#         #output3 = model.forward(data3.float())
 
-        # Compute loss based on two outputs
-        loss1 = criterion(output1.float(), target.float())
-        #loss2 = criterion(output2.float(), target.float())
-        #loss3 = criterion(output1.float(), output2.float())
+#         # Compute loss based on two outputs
+#         loss1 = criterion(output1.float(), target.float())
+#         #loss2 = criterion(output2.float(), target.float())
+#         #loss3 = criterion(output1.float(), output2.float())
         
-        # TODO: 
-        # 1) loss2 high weight
-        # more...
-        #loss = loss1 + loss2
+#         # TODO: 
+#         # 1) loss2 high weight
+#         # more...
+#         #loss = loss1 + loss2
         
-#         alpha = 0.8
-#         beta = 0.2
-#         gamma = 1
-#         loss = alpha * loss1 + beta * loss2
+# #         alpha = 0.8
+# #         beta = 0.2
+# #         gamma = 1
+# #         loss = alpha * loss1 + beta * loss2
         
-        # Update
-        optimizer.zero_grad()
-        loss1.backward()
-        optimizer.step()
-        # if batch_idx % 10 == 0:
-        #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #         epoch, batch_idx * len(data), len(train_dataloader.dataset),
-        #         100. * batch_idx / len(train_dataloader), loss.data))
+#         # Update
+#         optimizer.zero_grad()
+#         loss1.backward()
+#         optimizer.step()
+#         # if batch_idx % 10 == 0:
+#         #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+#         #         epoch, batch_idx * len(data), len(train_dataloader.dataset),
+#         #         100. * batch_idx / len(train_dataloader), loss.data))
             
 def test(model):
     model.eval()
@@ -263,7 +263,7 @@ for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
     # Trainer type
-    train(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     
     # Save best model
