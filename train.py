@@ -36,7 +36,7 @@ torch.backends.cudnn.benchmark = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "unet_cb_isic2018_100epochs"
+EXPERIMENT_NAME = "unet_isic2018_100epochs"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -56,7 +56,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 train_dataset = ISIC2018_dataloader("datasets/ISIC2018")
 test_dataset = ISIC2018_dataloader("datasets/ISIC2018", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
+train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 dt = next(iter(train_dataloader))
@@ -88,6 +88,7 @@ print("Trainable parameters ", all_train_params)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
+criterion_mse = nn.MSELoss()
 
 ########## Trainer and validation functions ##########
 
@@ -111,7 +112,7 @@ def train(model, epoch):
 
 def train_context_branch(model, epoch):
     """
-    Trains segmentation model using a context branch in a siamese style. 
+    Trains a segmentation model using context branch in a siamese style. 
     """
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
@@ -124,9 +125,10 @@ def train_context_branch(model, epoch):
         # Compute loss based on two outputs
         loss1 = criterion(output1.float(), target.float())
         loss2 = criterion(output2.float(), target.float())
-        
+        # Loss coefficients
         alpha = 1
-        beta = 1 #0.2
+        beta = 1
+        # Total loss
         loss = alpha * loss1 + beta * loss2
         
         # Update
@@ -135,6 +137,35 @@ def train_context_branch(model, epoch):
         optimizer.step()
 
 
+def train_context_branch_with_task_sim(model, epoch):
+    """
+    Trains a segmentation model using context branch and task similarity constraint. 
+    """
+    model.train()
+    for batch_idx, data in enumerate(train_dataloader):
+        data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
+        # This is siamese style U-Net
+        # Pass two inputs through the same model to get two outputs
+        output1 = model.forward(data1.float())
+        output2 = model.forward(data2.float())
+
+        # Compute loss based on two outputs
+        loss1 = criterion(output1.float(), target.float())
+        loss2 = criterion(output2.float(), target.float())
+        loss3 = criterion_mse(output1.float(), output2.float())
+        # Loss coefficients
+        alpha = 0.8
+        beta = 0.2
+        gamma = 1
+        # Total loss
+        loss = alpha * loss1 + beta * loss2 + gamma * loss3
+        
+        # Update
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        
 def train_coin(model, epoch):
     """
     Builds on previous train_siamseg.ipynb notebook. Implements enforce similarity part.
@@ -232,7 +263,7 @@ for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
     # Trainer type
-    train_context_branch(model, epoch)
+    train(model, epoch)
     score = test(model)
     
     # Save best model
