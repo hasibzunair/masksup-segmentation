@@ -36,7 +36,7 @@ torch.backends.cudnn.benchmark = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "unet_cb_ts_isic2018"
+EXPERIMENT_NAME = "unet_cb_ts_a0.7b0.2g0.1_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -154,16 +154,16 @@ def train_context_branch_with_task_sim(model, epoch):
         loss2 = criterion(output2.float(), target.float())
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
-        print(loss1, loss2, loss3)
+        #print(loss1, loss2, loss3)
         #pred = output.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy() > 0.5
         
         # Loss coefficients
-        alpha = 1 #0.7
-        beta = 1 #0.2
-        gamma = 1 #0.1
+        alpha = 0.7 #0.7
+        beta = 0.2 #0.2
+        gamma = 0.1 #0.1
         
         # Notes
-        # 1,1,1 -> Max jaccard and dice:  0.7440401715063176  and  0.8387288101433973
+        # 1,1,1 -> Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
         #
         
         
