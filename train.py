@@ -139,7 +139,7 @@ def train_context_branch(model, epoch):
 
 def train_context_branch_with_task_sim(model, epoch):
     """
-    Trains a segmentation model using context branch and task similarity constraint. 
+    Trains a segmentation model using context branch (CB) and task similarity (TS) constraint. 
     """
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
