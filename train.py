@@ -158,13 +158,16 @@ def train_context_branch_with_task_sim(model, epoch):
         #pred = output.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy() > 0.5
         
         # Loss coefficients
-        alpha = 0.7 #0.7
+        alpha = 0.5 #0.7
         beta = 0.2 #0.2
-        gamma = 0.1 #0.1
+        gamma = 0.3 #0.1
         
         # Notes
         # 1,1,1 -> Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
-        #
+        # 0.7,0.2,0.3 -> Max jaccard and dice:  0.8094201231544016  and  0.8833294555615818
+        # 0.7,0.2,0.3 ->
+        # 0.7,0.2,0.3 ->
+        # 0.7,0.2,0.3 ->
         
         
         # Total loss
