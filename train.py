@@ -14,7 +14,10 @@ from torch.autograd import Variable
 
 from helpers import Logger
 from dataset import ISIC2018_dataloader
-from models import build_unet
+from models.unet import build_unet
+from models.LeViTUNet128s import Build_LeViT_UNet_128s
+from models.LeViTUNet192 import Build_LeViT_UNet_192
+from models.LeViTUNet384 import Build_LeViT_UNet_384
 
 """Training script"""
 
@@ -36,7 +39,7 @@ torch.backends.cudnn.benchmark = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "unet_cb_ts_a0.7b0.2g0.1_isic2018"
+EXPERIMENT_NAME = "levit128_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -69,7 +72,12 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-model = build_unet()
+#model = build_unet()
+model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
+
+#net = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
+#net = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -158,15 +166,15 @@ def train_context_branch_with_task_sim(model, epoch):
         #pred = output.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy() > 0.5
         
         # Loss coefficients
-        alpha = 0.5 #0.7
-        beta = 0.2 #0.2
-        gamma = 0.3 #0.1
+        alpha = 0.4
+        beta = 0.2
+        gamma = 0.4
         
         # Notes
-        # 1,1,1 -> Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
+        # 1,1,1 -> ( BEST)Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
         # 0.7,0.2,0.3 -> Max jaccard and dice:  0.8094201231544016  and  0.8833294555615818
-        # 0.7,0.2,0.3 ->
-        # 0.7,0.2,0.3 ->
+        # 0.5,0.2,0.3 -> Max jaccard and dice:  0.8131758432820985  and  0.8857327138584684
+        # 0.4,0.2,0.4 -> ???
         # 0.7,0.2,0.3 ->
         
         
@@ -232,7 +240,7 @@ for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
     # Trainer type
-    train_context_branch_with_task_sim(model, epoch)
+    train(model, epoch)
     score = test(model)
     
     # Save best model

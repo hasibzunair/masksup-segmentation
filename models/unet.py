@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision
 
-"""Model functions"""
+"""Builds U-Net"""
 
 ## U-Net model
 """ Convolutional block:
