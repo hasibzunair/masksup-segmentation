@@ -39,7 +39,7 @@ torch.backends.cudnn.benchmark = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "levit128_isic2018"
+EXPERIMENT_NAME = "levit128_cb_ts_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -166,11 +166,11 @@ def train_context_branch_with_task_sim(model, epoch):
         #pred = output.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy() > 0.5
         
         # Loss coefficients
-        alpha = 0.4
-        beta = 0.2
-        gamma = 0.4
+        alpha = 1 #0.4
+        beta = 1 #0.2
+        gamma = 1 #0.4
         
-        # Notes
+        # Notes (Unet isic2018)
         # 1,1,1 -> ( BEST)Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
         # 0.7,0.2,0.3 -> Max jaccard and dice:  0.8094201231544016  and  0.8833294555615818
         # 0.5,0.2,0.3 -> Max jaccard and dice:  0.8131758432820985  and  0.8857327138584684
@@ -240,7 +240,9 @@ for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
     # Trainer type
-    train(model, epoch)
+    #train(model, epoch)
+    #train_context_branch(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     
     # Save best model
