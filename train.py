@@ -39,7 +39,7 @@ torch.backends.cudnn.benchmark = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "levit128_cb_ts_isic2018"
+EXPERIMENT_NAME = "levit128_a1b1g5_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -74,8 +74,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 # Define model
 #model = build_unet()
 model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
+#model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 
-#net = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #net = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 
@@ -162,13 +162,10 @@ def train_context_branch_with_task_sim(model, epoch):
         loss2 = criterion(output2.float(), target.float())
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
-        #print(loss1, loss2, loss3)
-        #pred = output.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy() > 0.5
-        
         # Loss coefficients
         alpha = 1 #0.4
         beta = 1 #0.2
-        gamma = 1 #0.4
+        gamma = 5 #0.4
         
         # Notes (Unet isic2018)
         # 1,1,1 -> ( BEST)Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
