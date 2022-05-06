@@ -1,6 +1,7 @@
 import os,sys,inspect
 import random
 import time
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -33,13 +34,48 @@ if torch.cuda.is_available():
 torch.backends.cudnn.benchmark = True
 
 
+########## Get Args ##########
+
+def Args():
+    parser = argparse.ArgumentParser(description="settings")
+    # configuration
+    parser.add_argument("--exp_name", default="baseline")
+    # dataset
+    parser.add_argument("--dataset", default="isic2018", type=str)
+    # model
+    parser.add_argument("--alpha",default=1, type=float)
+    parser.add_argument("--beta",default=1, type=float)
+    parser.add_argument("--gamma",default=1, type=float)
+    
+#     parser.add_argument("--cutmix", default=None, type=str) # the path to load cutmix-pretrained backbone
+#     # dataset
+#     parser.add_argument("--dataset", default="voc07", type=str)
+#     parser.add_argument("--num_cls", default=20, type=int)
+#     parser.add_argument("--train_aug", default=["randomflip", "resizedcrop"], type=list)
+#     parser.add_argument("--test_aug", default=[], type=list)
+#     parser.add_argument("--img_size", default=448, type=int)
+#     parser.add_argument("--batch_size", default=16, type=int)
+#     # optimizer, default SGD
+#     parser.add_argument("--lr", default=0.01, type=float)
+#     parser.add_argument("--momentum", default=0.9, type=float)
+#     parser.add_argument("--w_d", default=0.0001, type=float, help="weight_decay")
+#     parser.add_argument("--warmup_epoch", default=2, type=int)
+#     parser.add_argument("--total_epoch", default=30, type=int)
+#     parser.add_argument("--print_freq", default=100, type=int)
+    args = parser.parse_args()
+    return args
+
+
+args = Args()
+
 ########## Setup ##########
 
 # Device
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-EXPERIMENT_NAME = "levit128_a1b1g5_isic2018"
+# Log folder
+EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -73,11 +109,9 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 
 # Define model
 #model = build_unet()
-model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-
-#net = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
-
+#model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
+model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
+#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -163,9 +197,10 @@ def train_context_branch_with_task_sim(model, epoch):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        alpha = 1 #0.4
-        beta = 1 #0.2
-        gamma = 5 #0.4
+        # 0.4, 0.2, 0.4 with LeViT128 on ISIC is best
+        alpha = 0.4 #0.4
+        beta = 0.2 #0.2
+        gamma = 0.4 #0.4
         
         # Notes (Unet isic2018)
         # 1,1,1 -> ( BEST)Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
