@@ -168,8 +168,8 @@ def train_context_branch(model, epoch):
         loss1 = criterion(output1.float(), target.float())
         loss2 = criterion(output2.float(), target.float())
         # Loss coefficients
-        alpha = 1
-        beta = 1
+        alpha = args.alpha
+        beta = args.beta
         # Total loss
         loss = alpha * loss1 + beta * loss2
         
