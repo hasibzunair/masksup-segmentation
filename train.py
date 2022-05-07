@@ -36,37 +36,47 @@ torch.backends.cudnn.benchmark = True
 
 ########## Get Args ##########
 
-def Args():
-    parser = argparse.ArgumentParser(description="settings")
-    # configuration
-    parser.add_argument("--exp_name", default="baseline")
-    # dataset
-    parser.add_argument("--dataset", default="isic2018", type=str)
-    # model
-    parser.add_argument("--alpha",default=1, type=float)
-    parser.add_argument("--beta",default=1, type=float)
-    parser.add_argument("--gamma",default=1, type=float)
-    
-#     parser.add_argument("--cutmix", default=None, type=str) # the path to load cutmix-pretrained backbone
+# def Args():
+#     parser = argparse.ArgumentParser(description="settings")
+#     # configuration
+#     parser.add_argument("--exp_name", default="baseline")
 #     # dataset
-#     parser.add_argument("--dataset", default="voc07", type=str)
-#     parser.add_argument("--num_cls", default=20, type=int)
-#     parser.add_argument("--train_aug", default=["randomflip", "resizedcrop"], type=list)
-#     parser.add_argument("--test_aug", default=[], type=list)
-#     parser.add_argument("--img_size", default=448, type=int)
-#     parser.add_argument("--batch_size", default=16, type=int)
-#     # optimizer, default SGD
-#     parser.add_argument("--lr", default=0.01, type=float)
-#     parser.add_argument("--momentum", default=0.9, type=float)
-#     parser.add_argument("--w_d", default=0.0001, type=float, help="weight_decay")
-#     parser.add_argument("--warmup_epoch", default=2, type=int)
-#     parser.add_argument("--total_epoch", default=30, type=int)
-#     parser.add_argument("--print_freq", default=100, type=int)
-    args = parser.parse_args()
-    return args
+#     parser.add_argument("--dataset", default="isic2018", type=str)
+#     # model
+#     parser.add_argument("--alpha",default=1, type=float)
+#     parser.add_argument("--beta",default=1, type=float)
+#     parser.add_argument("--gamma",default=1, type=float)
+    
+# #     parser.add_argument("--cutmix", default=None, type=str) # the path to load cutmix-pretrained backbone
+# #     # dataset
+# #     parser.add_argument("--dataset", default="voc07", type=str)
+# #     parser.add_argument("--num_cls", default=20, type=int)
+# #     parser.add_argument("--train_aug", default=["randomflip", "resizedcrop"], type=list)
+# #     parser.add_argument("--test_aug", default=[], type=list)
+# #     parser.add_argument("--img_size", default=448, type=int)
+# #     parser.add_argument("--batch_size", default=16, type=int)
+# #     # optimizer, default SGD
+# #     parser.add_argument("--lr", default=0.01, type=float)
+# #     parser.add_argument("--momentum", default=0.9, type=float)
+# #     parser.add_argument("--w_d", default=0.0001, type=float, help="weight_decay")
+# #     parser.add_argument("--warmup_epoch", default=2, type=int)
+# #     parser.add_argument("--total_epoch", default=30, type=int)
+# #     parser.add_argument("--print_freq", default=100, type=int)
+#     args = parser.parse_args()
+#     return args
 
+parser = argparse.ArgumentParser(description="settings")
+# configuration
+parser.add_argument("--exp_name", default="baseline")
+# dataset
+parser.add_argument("--dataset", default="isic2018", type=str)
+# model
+parser.add_argument("--alpha",default=1, type=float)
+parser.add_argument("--beta",default=1, type=float)
+parser.add_argument("--gamma",default=1, type=float)
+args = parser.parse_args()
 
-args = Args()
+print(args)
 
 ########## Setup ##########
 
@@ -75,7 +85,8 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
+#EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
+EXPERIMENT_NAME = "levit192_cb_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -138,6 +149,8 @@ def train(model, epoch):
     """
     Trains a segmentation model.
     """
+    print("Trains a segmentation model.")
+    
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
@@ -156,11 +169,12 @@ def train_context_branch(model, epoch):
     """
     Trains a segmentation model using context branch in a siamese style. 
     """
+    
+    print("Trains a segmentation model using context branch in a siamese style.")
+    
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
-        # This is siamese style U-Net
-        # Pass two inputs through the same model to get two outputs
         output1 = model.forward(data1.float())
         output2 = model.forward(data2.float())
         
@@ -168,8 +182,8 @@ def train_context_branch(model, epoch):
         loss1 = criterion(output1.float(), target.float())
         loss2 = criterion(output2.float(), target.float())
         # Loss coefficients
-        alpha = args.alpha
-        beta = args.beta
+        alpha = 1 #args.alpha
+        beta = 1 #args.beta
         # Total loss
         loss = alpha * loss1 + beta * loss2
         
@@ -177,30 +191,36 @@ def train_context_branch(model, epoch):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
+    print("With CB: ", alpha, beta)
 
 
 def train_context_branch_with_task_sim(model, epoch):
     """
     Trains a segmentation model using context branch (CB) and task similarity (TS) constraint. 
     """
+    
+    print("Trains a segmentation model using context branch (CB) and task similarity (TS) constraint.")
+    
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
-        # This is siamese style U-Net
-        # Pass two inputs through the same model to get two outputs
         output1 = model.forward(data1.float())
         output2 = model.forward(data2.float())
 
-        # Compute loss based on two outputs
+        # Compute loss based on two outputs, and enforce similarity
         loss1 = criterion(output1.float(), target.float())
         loss2 = criterion(output2.float(), target.float())
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
         # 0.4, 0.2, 0.4 with LeViT128 on ISIC is best
-        alpha = 0.4 #0.4
-        beta = 0.2 #0.2
-        gamma = 0.4 #0.4
+        alpha = 1#0.4 #0.4
+        beta = 1 #0.2 #0.2
+        gamma = 1 #0.4 #0.4
+        
+        #  
+        # 
         
         # Notes (Unet isic2018)
         # 1,1,1 -> ( BEST)Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
@@ -217,6 +237,8 @@ def train_context_branch_with_task_sim(model, epoch):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
+    print("With CB + TS: ", alpha, beta, gamma)
         
             
 def test(model):
@@ -271,10 +293,11 @@ N_EPOCHS = 100
 for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
+    
     # Trainer type
     #train(model, epoch)
-    #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    train_context_branch(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     
     # Save best model
