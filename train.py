@@ -86,7 +86,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "levit192_cb_isic2018"
+EXPERIMENT_NAME = "levit384_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -121,8 +121,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 # Define model
 #model = build_unet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
-model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+#model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
+model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -215,9 +215,9 @@ def train_context_branch_with_task_sim(model, epoch):
         
         # Loss coefficients
         # 0.4, 0.2, 0.4 with LeViT128 on ISIC is best
-        alpha = 1#0.4 #0.4
-        beta = 1 #0.2 #0.2
-        gamma = 1 #0.4 #0.4
+        alpha = 0.4 #0.4
+        beta = 0.2 #0.2
+        gamma = 0.4 #0.4
         
         #  
         # 
@@ -295,8 +295,8 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type
-    #train(model, epoch)
-    train_context_branch(model, epoch)
+    train(model, epoch)
+    #train_context_branch(model, epoch)
     #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     
