@@ -86,7 +86,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "levit384_isic2018"
+EXPERIMENT_NAME = "levit384_cb_ts_a5b1g25_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -215,9 +215,9 @@ def train_context_branch_with_task_sim(model, epoch):
         
         # Loss coefficients
         # 0.4, 0.2, 0.4 with LeViT128 on ISIC is best
-        alpha = 0.4 #0.4
-        beta = 0.2 #0.2
-        gamma = 0.4 #0.4
+        alpha = 5 #0.4
+        beta = 1 #0.2
+        gamma = 25 #0.4
         
         #  
         # 
@@ -295,9 +295,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type
-    train(model, epoch)
+    #train(model, epoch)
     #train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     
     # Save best model
