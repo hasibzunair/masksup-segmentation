@@ -12,6 +12,9 @@ from torch.utils.data import Dataset
 """Dataset classes"""    
     
 class ISIC2018_dataloader(Dataset):
+    """
+    ISIC 2018 data loader with Irregular Masks Dataset.
+    """
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
         self._data_folder = data_folder
@@ -83,18 +86,22 @@ class ISIC2018_dataloader(Dataset):
     
 
     
-class KVASIR_SEG_dataloader(Dataset):
+class CVCLINICDB_SEG_dataloader(Dataset):
+    """
+    CVC Clinic DB data loader with Irregular Masks Dataset.
+    """
+        
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
         self._data_folder = data_folder
         self.build_dataset()
 
     def build_dataset(self):
-        self._input_folder = os.path.join(self._data_folder, 'images')
-        self._label_folder = os.path.join(self._data_folder, 'masks')
+        self._input_folder = os.path.join(self._data_folder, 'Original')
+        self._label_folder = os.path.join(self._data_folder, 'GroundTruth')
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
-        self._images = sorted(glob.glob(self._input_folder + "/*.jpg"))
-        self._labels = sorted(glob.glob(self._label_folder + "/*.jpg"))
+        self._images = sorted(glob.glob(self._input_folder + "/*.png"))
+        self._labels = sorted(glob.glob(self._label_folder + "/*.png"))
         self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))
         
         #import ipdb; ipdb.set_trace()
@@ -127,12 +134,12 @@ class KVASIR_SEG_dataloader(Dataset):
         mask = Image.open(mask_path).convert('P')
         scribble = Image.open(scribble_path).convert('P')
         
-        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
+        transforms_image = transforms.Compose([transforms.Resize((256, 256)), transforms.CenterCrop((256,256)),
                                              transforms.ToTensor(),
                                             transforms.Normalize((0.5, 0.5, 0.5),
                                                 (0.5, 0.5, 0.5))])
         
-        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
+        transforms_mask = transforms.Compose([transforms.Resize((256, 256)), transforms.CenterCrop((256,256)),
                                              transforms.ToTensor()])
         
         image = transforms_image(image)
