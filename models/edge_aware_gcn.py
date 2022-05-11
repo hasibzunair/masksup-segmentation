@@ -66,7 +66,9 @@ class EAGCN(nn.Module):
         sigma = seg_c.view(n, self.num_s, -1).contiguous()
         sigma_T = seg_c.view(n, -1, self.num_s).contiguous()
         sigma_out = torch.bmm(sigma_T, sigma)
-
+        
+        #print(seg.shape, edge.shape)
+        #seg = F.upsample(input=seg, size=(32, 32), mode='bilinear')
         edge_m = seg * edge
 
         maxpool_s, _ = torch.max(seg, dim=1)
@@ -91,9 +93,10 @@ class GRU_EAGCN(nn.Module):
         super(GRU_EAGCN, self).__init__()
 
         self.eagcn = EAGCN(num_in, plane_mid, mids)
-        self.rnn = torch.nn.GRU(input_size=1024, hidden_size=1024, num_layers=1)
+        self.rnn = torch.nn.GRU(input_size=784, hidden_size=784, num_layers=1)
     def forward(self, seg, edge):
         _, c, h, w = seg.size()
+        #print(seg.size())
         #------------t0-------#
         updated_seg = self.eagcn(seg, edge)
         updated_seg = updated_seg.view(c, -1, h*w)

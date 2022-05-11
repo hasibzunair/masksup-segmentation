@@ -19,6 +19,7 @@ from models.unet import build_unet
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
+from models.bigcn import ODOC_seg_edge
 
 """Training script"""
 
@@ -86,7 +87,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "levit384_cb_ts_a30b1g50_isic2018"
+EXPERIMENT_NAME = "bigcn_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -122,7 +123,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 #model = build_unet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+model = ODOC_seg_edge()
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -215,7 +217,7 @@ def train_context_branch_with_task_sim(model, epoch):
         
         # Loss coefficients
         # 0.4, 0.2, 0.4 with LeViT128 on ISIC is best
-        alpha = 30 #0.4
+        alpha = 25 #0.4
         beta = 1 #0.2
         gamma = 50 #0.4
         
@@ -295,9 +297,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type
-    #train(model, epoch)
+    train(model, epoch)
     #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     
     # Save best model
