@@ -105,7 +105,7 @@ class CVCLINICDB_dataloader(Dataset):
         self.train_images, self.test_images, self.train_labels, self.test_labels, self.train_scribbles, self.test_scribbles = train_test_split(self._images, 
                                                                                                     self._labels,
                                                                                                     self._scribbles[:len(self._images)],
-                                                                                                    test_size=0.2, shuffle=False, random_state=0)
+                                                                                                    test_size=0.1, shuffle=False, random_state=0)
 
         
     def __len__(self):
@@ -130,12 +130,12 @@ class CVCLINICDB_dataloader(Dataset):
         mask = Image.open(mask_path).convert('P')
         scribble = Image.open(scribble_path).convert('P')
         
-        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
+        transforms_image = transforms.Compose([transforms.Resize((512, 512)), transforms.CenterCrop((512,512)),
                                              transforms.ToTensor(),
                                             transforms.Normalize((0.5, 0.5, 0.5),
                                                 (0.5, 0.5, 0.5))])
         
-        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
+        transforms_mask = transforms.Compose([transforms.Resize((512, 512)), transforms.CenterCrop((512,512)),
                                              transforms.ToTensor()])
         
         image = transforms_image(image)
