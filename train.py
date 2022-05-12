@@ -20,6 +20,7 @@ from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
 from models.bigcn import ODOC_seg_edge
+from models.unetplusplus import NestedUNet
 
 """Training script"""
 
@@ -87,7 +88,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "bigcn_isic2018"
+EXPERIMENT_NAME = "nestedunet_isic2018"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -124,7 +125,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
-model = ODOC_seg_edge()
+#model = ODOC_seg_edge()
+model = NestedUNet()
 
 # Send to GPU
 model = model.to(DEVICE)
