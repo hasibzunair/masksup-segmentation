@@ -14,7 +14,7 @@ from torchvision import datasets, transforms, utils
 from torch.autograd import Variable
 
 from helpers import Logger
-from dataset import ISIC2018_dataloader
+from dataset import ISIC2018_dataloader, CVCLINICDB_dataloader
 from models.unet import build_unet
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
@@ -88,7 +88,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "nestedunet_isic2018"
+EXPERIMENT_NAME = "nestedunet_cvcdb"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -105,8 +105,8 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 ########## Load data ##########
 
-train_dataset = ISIC2018_dataloader("datasets/ISIC2018")
-test_dataset = ISIC2018_dataloader("datasets/ISIC2018", is_train=False)
+train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB") # ISIC2018
+test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False) # ISIC2018
 
 train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)

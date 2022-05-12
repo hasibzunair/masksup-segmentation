@@ -86,11 +86,7 @@ class ISIC2018_dataloader(Dataset):
     
 
     
-class CVCLINICDB_SEG_dataloader(Dataset):
-    """
-    CVC Clinic DB data loader with Irregular Masks Dataset.
-    """
-        
+class CVCLINICDB_dataloader(Dataset):
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
         self._data_folder = data_folder
@@ -134,12 +130,12 @@ class CVCLINICDB_SEG_dataloader(Dataset):
         mask = Image.open(mask_path).convert('P')
         scribble = Image.open(scribble_path).convert('P')
         
-        transforms_image = transforms.Compose([transforms.Resize((256, 256)), transforms.CenterCrop((256,256)),
+        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
                                              transforms.ToTensor(),
                                             transforms.Normalize((0.5, 0.5, 0.5),
                                                 (0.5, 0.5, 0.5))])
         
-        transforms_mask = transforms.Compose([transforms.Resize((256, 256)), transforms.CenterCrop((256,256)),
+        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
                                              transforms.ToTensor()])
         
         image = transforms_image(image)
