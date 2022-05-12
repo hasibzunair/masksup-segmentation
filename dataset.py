@@ -130,12 +130,12 @@ class CVCLINICDB_dataloader(Dataset):
         mask = Image.open(mask_path).convert('P')
         scribble = Image.open(scribble_path).convert('P')
         
-        transforms_image = transforms.Compose([transforms.Resize((512, 512)), transforms.CenterCrop((512,512)),
+        transforms_image = transforms.Compose([transforms.Resize((288, 384)), transforms.CenterCrop((288,384)),
                                              transforms.ToTensor(),
                                             transforms.Normalize((0.5, 0.5, 0.5),
                                                 (0.5, 0.5, 0.5))])
         
-        transforms_mask = transforms.Compose([transforms.Resize((512, 512)), transforms.CenterCrop((512,512)),
+        transforms_mask = transforms.Compose([transforms.Resize((288, 384)), transforms.CenterCrop((288,384)),
                                              transforms.ToTensor()])
         
         image = transforms_image(image)

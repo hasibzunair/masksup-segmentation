@@ -122,11 +122,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 
 # Define model
 model = build_unet()
+model = NestedUNet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 #model = ODOC_seg_edge()
-model = NestedUNet()
 
 # Send to GPU
 model = model.to(DEVICE)
