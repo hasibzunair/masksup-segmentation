@@ -88,7 +88,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "unet_cvcdb"
+EXPERIMENT_NAME = "nestedunet_cvcdb"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -107,8 +107,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB") # ISIC2018
 test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False) # ISIC2018
-
-train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
+train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 dt = next(iter(train_dataloader))
@@ -116,7 +115,6 @@ x = dt["image"]
 y = dt["mask"]
 
 print("Sample: ", x[0][:,:10][0][0][:3])
-
 
 ########## Get model ##########
 
