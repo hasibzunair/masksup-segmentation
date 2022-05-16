@@ -87,7 +87,7 @@ class SEG_Module(nn.Module):
 
 
         self.conv5 = nn.Conv2d(4 * channel, 1, 1) # final output
-        self.GCN = GRU_EAGCN(num_in=1, plane_mid=1, mids=28)
+        self.GCN = GRU_EAGCN(num_in=1, plane_mid=1, mids=28) # 28 for ISIC
 
     def forward(self, x1, x2, x3, edge):  
         up_x1 = self.conv_upsample1(self.upsample(x1))
@@ -149,9 +149,9 @@ class ODOC_seg_edge(nn.Module):
 
         edge_feat = self.edge(x3_rfb, x2_rfb, x1_rfb)  
 
-        edge = torch.nn.functional.interpolate(edge_feat, size=(28, 28), mode='bilinear', align_corners=True)  
+        edge = torch.nn.functional.interpolate(edge_feat, size=(28, 28), mode='bilinear', align_corners=True) # 28 for ISIC
 
         seg_output = self.seg_layer(x4_rfb, x3_rfb, x2_rfb, edge)
         #seg_output = torch.nn.functional.interpolate(seg_output, size=(256, 256), mode='bilinear', align_corners=True)
-        seg_output = F.upsample(input=seg_output, size=(224, 224), mode='bilinear')
+        seg_output = F.upsample(input=seg_output, size=(224, 224), mode='bilinear') # 224 for ISIC
         return seg_output
