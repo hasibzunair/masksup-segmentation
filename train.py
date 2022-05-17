@@ -14,7 +14,7 @@ from torchvision import datasets, transforms, utils
 from torch.autograd import Variable
 
 from helpers import Logger
-from dataset import ISIC2018_dataloader, CVCLINICDB_dataloader, GLAS_dataloader
+from dataset import ISIC2018_dataloader, GLAS_dataloader
 from models.unet import build_unet
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
@@ -88,7 +88,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "bigcn_glas"
+EXPERIMENT_NAME = "unet_cb_glas"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -119,9 +119,9 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-#model = build_unet()
+model = build_unet()
 #model = NestedUNet()
-model = ODOC_seg_edge()
+#model = ODOC_seg_edge()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
@@ -183,9 +183,11 @@ def train_context_branch(model, epoch):
         # Compute loss based on two outputs
         loss1 = criterion(output1.float(), target.float())
         loss2 = criterion(output2.float(), target.float())
+        
         # Loss coefficients
-        alpha = 1 #args.alpha
-        beta = 1 #args.beta
+        alpha = 1
+        beta = 1
+        
         # Total loss
         loss = alpha * loss1 + beta * loss2
         
@@ -216,21 +218,9 @@ def train_context_branch_with_task_sim(model, epoch):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        # 0.4, 0.2, 0.4 with LeViT128 on ISIC is best
-        alpha = 25 #0.4
-        beta = 1 #0.2
-        gamma = 50 #0.4
-        
-        #  
-        # 
-        
-        # Notes (Unet isic2018)
-        # 1,1,1 -> ( BEST)Max jaccard and dice:  0.8136580522714527  and  0.8864272972888932 (unet_cb_ts_isic2018)
-        # 0.7,0.2,0.3 -> Max jaccard and dice:  0.8094201231544016  and  0.8833294555615818
-        # 0.5,0.2,0.3 -> Max jaccard and dice:  0.8131758432820985  and  0.8857327138584684
-        # 0.4,0.2,0.4 -> ???
-        # 0.7,0.2,0.3 ->
-        
+        alpha = 1 # 25
+        beta = 1 # 1
+        gamma = 1 # 50
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
@@ -297,8 +287,8 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type
-    train(model, epoch)
-    #train_context_branch(model, epoch)
+    #train(model, epoch)
+    train_context_branch(model, epoch)
     #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     
