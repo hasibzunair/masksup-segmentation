@@ -3,6 +3,7 @@ import random
 import time
 import argparse
 import numpy as np
+import cv2
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -12,9 +13,11 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, utils
 from torch.autograd import Variable
+from torch import Tensor
 
 from helpers import Logger
 from dataset import ISIC2018_dataloader, GLAS_dataloader
+from metrics import iou_score, dice_coef
 from models.unet import build_unet
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
@@ -88,7 +91,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "unet_cb_glas"
+EXPERIMENT_NAME = "glas_unet"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -98,15 +101,21 @@ if not os.path.exists(os.path.join(ROOT_DIR, "logs")):
     
 if not os.path.exists(LOG_PATH):
     os.mkdir(LOG_PATH)
+    os.mkdir(os.path.join(LOG_PATH, "samples"))
+    os.mkdir(os.path.join(LOG_PATH, "samples", "masked_imgs_cb"))
+    os.mkdir(os.path.join(LOG_PATH, "samples", "masked_preds_cb"))
+    os.mkdir(os.path.join(LOG_PATH, "samples", "masked_imgs_cb_ts"))
+    os.mkdir(os.path.join(LOG_PATH, "samples", "masked_preds_cb_ts"))
+if not os.path.exists(LOG_PATH):
+    os.mkdir(LOG_PATH)
     
 # save config in log file
 sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
-
 ########## Load data ##########
 
 train_dataset = GLAS_dataloader("datasets/GLAS") # ISIC2018, GLAS
-test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False) # ISIC2018
+test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
 train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
@@ -141,9 +150,34 @@ print("Trainable parameters ", all_train_params)
 
 ########## Setup optimizer and loss ##########
 
+class DiceLoss(nn.Module):
+    """
+    Dice loss implementation: https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch/notebook
+    """
+    
+    def __init__(self, weight=None, size_average=True):
+        super(DiceLoss, self).__init__()
+
+    def forward(self, inputs, targets, smooth=1):
+        
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        inputs = F.sigmoid(inputs)       
+        
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        
+        intersection = (inputs * targets).sum()                            
+        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
+        
+        return 1 - dice
+    
+
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
+#criterion = DiceLoss()
 criterion_mse = nn.MSELoss()
+
 
 ########## Trainer and validation functions ##########
 
@@ -199,7 +233,7 @@ def train_context_branch(model, epoch):
     print("With CB: ", alpha, beta)
 
 
-def train_context_branch_with_task_sim(model, epoch):
+def train_context_branch_with_task_sim(model, epoch, save_masks=True):
     """
     Trains a segmentation model using context branch (CB) and task similarity (TS) constraint. 
     """
@@ -209,6 +243,16 @@ def train_context_branch_with_task_sim(model, epoch):
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
+        
+        # Save masked image
+        if save_masks:
+            masked_img = data2[0]
+            masked_img = (masked_img.permute(1,2,0).detach().cpu().numpy()+1)/2
+            masked_img = (masked_img*255).astype(np.uint8)
+            masked_img = cv2.cvtColor(masked_img, cv2.COLOR_RGB2BGR)
+            cv2.imwrite("{}/samples/masked_imgs_cb_ts/ep{}_b{}.png".format(LOG_PATH, epoch, batch_idx), masked_img)
+        
+        # Make predictions
         output1 = model.forward(data1.float())
         output2 = model.forward(data2.float())
 
@@ -218,9 +262,9 @@ def train_context_branch_with_task_sim(model, epoch):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        alpha = 1 # 25
+        alpha = 25 # 25
         beta = 1 # 1
-        gamma = 1 # 50
+        gamma = 50 # 50
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
@@ -246,15 +290,9 @@ def test(model):
             output = model(data.float())
             test_loss += criterion(output.float(), target.float()).item()
             
-            output = torch.sigmoid(output) # Turn activations into probabilities by feeding through sigmoid
-            gt = target.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy()
-            pred = output.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy() > 0.5
-
-            intersection = pred * gt
-            union = pred + gt - intersection
-            jaccard += (np.sum(intersection)/np.sum(union))  
-            dice += (2. * np.sum(intersection) ) / (np.sum(pred) + np.sum(gt))
-    
+            jaccard += iou_score(output, target)
+            dice += dice_coef(output, target)
+            
         test_loss /= len(test_dataloader)
         jaccard /= len(test_dataloader)
         dice /= len(test_dataloader)
@@ -271,7 +309,6 @@ def test(model):
         print('==========================================')
         return dice
 
-    
 ########## Train and validate ##########
 
 losses = []
@@ -281,19 +318,46 @@ score = 0
 best_score = 0
 
 start_time = time.time()
-N_EPOCHS = 100
+N_EPOCHS = 200
 for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
     
     # Trainer type
-    #train(model, epoch)
-    train_context_branch(model, epoch)
+    train(model, epoch)
+    #train_context_branch(model, epoch)
     #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
-    
-    # Save best model
+
     if score > best_score:
+        # Save predictions
+        if not os.path.exists(os.path.join(LOG_PATH, "vis")):
+            os.mkdir(os.path.join(LOG_PATH, "vis"))
+            os.mkdir(os.path.join(LOG_PATH, "vis", "imgs"))
+            os.mkdir(os.path.join(LOG_PATH, "vis", "gts"))
+            os.mkdir(os.path.join(LOG_PATH, "vis", "preds"))
+        
+        for batch_idx, data in enumerate(test_dataloader):
+            img, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
+            output = torch.sigmoid(model(img.float()))
+
+            img = (img[0].permute(1,2,0).detach().cpu().numpy()+1)/2
+            img = (img*255).astype(np.uint8)
+            img=cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+
+            gt = target.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy()
+            gt=(gt*255).astype(np.uint8)
+            gt=cv2.cvtColor(gt,cv2.COLOR_RGB2BGR)
+
+            pred = output.permute(0, 2, 3, 1).squeeze().detach().cpu().numpy() > 0.5
+            pred=(pred*255).astype(np.uint8)
+            pred=cv2.cvtColor(pred,cv2.COLOR_RGB2BGR)
+
+            cv2.imwrite(os.path.join(LOG_PATH, "vis", "imgs/")+str(batch_idx)+'.png', img)
+            cv2.imwrite(os.path.join(LOG_PATH, "vis", "gts/")+str(batch_idx)+'.png', gt)
+            cv2.imwrite(os.path.join(LOG_PATH, "vis", "preds/")+str(batch_idx)+'.png', pred)
+
+        # Save model
         print("Saving model at dice={:.3f}".format(score))
         torch.save(model.state_dict(), '{}/{}.pth'.format(LOG_PATH, EXPERIMENT_NAME))
         best_score = score
