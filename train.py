@@ -91,7 +91,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_unet"
+EXPERIMENT_NAME = "glas_unet_cb_ts_a0.4b0.2g0.2"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -150,34 +150,33 @@ print("Trainable parameters ", all_train_params)
 
 ########## Setup optimizer and loss ##########
 
-class DiceLoss(nn.Module):
-    """
-    Dice loss implementation: https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch/notebook
-    """
+# class DiceLoss(nn.Module):
+#     """
+#     Dice loss implementation: https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch/notebook
+#     Usage: criterion = DiceLoss()
+#     """
     
-    def __init__(self, weight=None, size_average=True):
-        super(DiceLoss, self).__init__()
+#     def __init__(self, weight=None, size_average=True):
+#         super(DiceLoss, self).__init__()
 
-    def forward(self, inputs, targets, smooth=1):
+#     def forward(self, inputs, targets, smooth=1):
         
-        #comment out if your model contains a sigmoid or equivalent activation layer
-        inputs = F.sigmoid(inputs)       
+#         #comment out if your model contains a sigmoid or equivalent activation layer
+#         inputs = F.sigmoid(inputs)       
         
-        #flatten label and prediction tensors
-        inputs = inputs.view(-1)
-        targets = targets.view(-1)
+#         #flatten label and prediction tensors
+#         inputs = inputs.view(-1)
+#         targets = targets.view(-1)
         
-        intersection = (inputs * targets).sum()                            
-        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
+#         intersection = (inputs * targets).sum()                            
+#         dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
         
-        return 1 - dice
+#         return 1 - dice
     
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
-#criterion = DiceLoss()
 criterion_mse = nn.MSELoss()
-
 
 ########## Trainer and validation functions ##########
 
@@ -201,7 +200,7 @@ def train(model, epoch):
         optimizer.step()
 
 
-def train_context_branch(model, epoch):
+def train_context_branch(model, epoch, save_masks=True):
     """
     Trains a segmentation model using context branch in a siamese style. 
     """
@@ -211,6 +210,16 @@ def train_context_branch(model, epoch):
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
+        
+        # Save masked image
+        if save_masks:
+            masked_img = data2[0]
+            masked_img = (masked_img.permute(1,2,0).detach().cpu().numpy()+1)/2
+            masked_img = (masked_img*255).astype(np.uint8)
+            masked_img = cv2.cvtColor(masked_img, cv2.COLOR_RGB2BGR)
+            cv2.imwrite("{}/samples/masked_imgs_cb/ep{}_b{}.png".format(LOG_PATH, epoch, batch_idx), masked_img)
+        
+        # Make predictions
         output1 = model.forward(data1.float())
         output2 = model.forward(data2.float())
         
@@ -262,9 +271,9 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        alpha = 25 # 25
-        beta = 1 # 1
-        gamma = 50 # 50
+        alpha = 0.4 # 25
+        beta = 0.2 # 1
+        gamma = 0.4 # 50
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
@@ -324,9 +333,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type
-    train(model, epoch)
+    #train(model, epoch)
     #train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:

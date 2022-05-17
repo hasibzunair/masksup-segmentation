@@ -27,7 +27,7 @@ class ISIC2018_dataloader(Dataset):
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
         self._images = sorted(glob.glob(self._input_folder + "/*.jpg"))
         self._labels = sorted(glob.glob(self._label_folder + "/*.png"))
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png")) # For heavy masking [::-1]
         
         self.train_images, self.test_images, self.train_labels, self.test_labels, self.train_scribbles, self.test_scribbles = train_test_split(self._images, 
                                                                                                     self._labels,
@@ -46,7 +46,7 @@ class ISIC2018_dataloader(Dataset):
         if self.is_train:
             img_path = self.train_images[idx]
             mask_path = self.train_labels[idx]
-            scribble_path = self._scribbles[np.random.randint(12000)] # pick randomly from scribbles
+            scribble_path = self._scribbles[np.random.randint(1000)] # pick randomly from scribbles
         else:
             img_path = self.test_images[idx]
             mask_path = self.test_labels[idx]
@@ -105,7 +105,7 @@ class GLAS_dataloader(Dataset):
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking [::-1]
 
     def __len__(self):
         if self.is_train:
