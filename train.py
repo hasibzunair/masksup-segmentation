@@ -117,6 +117,9 @@ test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
 train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
+print("Training on {} batches/samples".format(len(train_dataloader)))
+print("Testing on {} batches/samples".format(len(test_dataloader)))
+
 dt = next(iter(train_dataloader))
 x = dt["image"]
 y = dt["mask"]
@@ -270,8 +273,6 @@ def test(model):
         for data in test_dataloader:
             data, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(data.float())
-            #import ipdb; ipdb.set_trace()
-            
             test_loss += criterion(output.float(), target.float()).item()
             jaccard += iou_score(output, target)
             dice += dice_coef(output, target)

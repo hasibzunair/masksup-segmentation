@@ -113,5 +113,4 @@ class build_unet(nn.Module):
         """ Classifier """
         outputs = self.outputs(d4)
         return outputs
-
-
+    
