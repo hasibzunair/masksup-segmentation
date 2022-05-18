@@ -91,7 +91,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_levit192"
+EXPERIMENT_NAME = "glas_levit384"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -116,7 +116,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 train_dataset = GLAS_dataloader("datasets/GLAS") # ISIC2018, GLAS
 test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
-train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8)
+train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 dt = next(iter(train_dataloader))
@@ -132,8 +132,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 #model = NestedUNet()
 #model = ODOC_seg_edge()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
-model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+#model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
+model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -147,32 +147,7 @@ print("All parameters ", all_params)
 all_train_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("Trainable parameters ", all_train_params)
 
-
 ########## Setup optimizer and loss ##########
-
-# class DiceLoss(nn.Module):
-#     """
-#     Dice loss implementation: https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch/notebook
-#     Usage: criterion = DiceLoss()
-#     """
-    
-#     def __init__(self, weight=None, size_average=True):
-#         super(DiceLoss, self).__init__()
-
-#     def forward(self, inputs, targets, smooth=1):
-        
-#         #comment out if your model contains a sigmoid or equivalent activation layer
-#         inputs = F.sigmoid(inputs)       
-        
-#         #flatten label and prediction tensors
-#         inputs = inputs.view(-1)
-#         targets = targets.view(-1)
-        
-#         intersection = (inputs * targets).sum()                            
-#         dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
-        
-#         return 1 - dice
-    
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
@@ -297,8 +272,9 @@ def test(model):
         for data in test_dataloader:
             data, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(data.float())
-            test_loss += criterion(output.float(), target.float()).item()
+            #import ipdb; ipdb.set_trace()
             
+            test_loss += criterion(output.float(), target.float()).item()
             jaccard += iou_score(output, target)
             dice += dice_coef(output, target)
             
@@ -316,7 +292,7 @@ def test(model):
         print('Dice Coefficient : {:.3f}'.format(dice * 100))
         print('==========================================')
         print('==========================================')
-        return dice
+        return jaccard
 
 ########## Train and validate ##########
 
@@ -367,7 +343,7 @@ for epoch in range(1, N_EPOCHS):
             cv2.imwrite(os.path.join(LOG_PATH, "vis", "preds/")+str(batch_idx)+'.png', pred)
 
         # Save model
-        print("Saving model at dice={:.3f}".format(score))
+        print("########Saving model at IoU/Jaccard={:.3f}########".format(score))
         torch.save(model.state_dict(), '{}/{}.pth'.format(LOG_PATH, EXPERIMENT_NAME))
         best_score = score
 
