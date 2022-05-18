@@ -91,7 +91,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_levit384"
+EXPERIMENT_NAME = "glas_unet"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -106,9 +106,7 @@ if not os.path.exists(LOG_PATH):
     os.mkdir(os.path.join(LOG_PATH, "samples", "masked_preds_cb"))
     os.mkdir(os.path.join(LOG_PATH, "samples", "masked_imgs_cb_ts"))
     os.mkdir(os.path.join(LOG_PATH, "samples", "masked_preds_cb_ts"))
-if not os.path.exists(LOG_PATH):
-    os.mkdir(LOG_PATH)
-    
+
 # save config in log file
 sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
@@ -128,12 +126,12 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-#model = build_unet()
+model = build_unet()
 #model = NestedUNet()
 #model = ODOC_seg_edge()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 # Send to GPU
 model = model.to(DEVICE)
