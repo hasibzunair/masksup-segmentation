@@ -288,8 +288,8 @@ def test(model):
 
 
         print('Average Loss: {:.3f}'.format(test_loss))
-        print('Jaccard Index : {:.3f}'.format(jaccard * 100))
-        print('Dice Coefficient : {:.3f}'.format(dice * 100))
+        print('Jaccard Index / IoU : {:.3f}'.format(jaccard * 100))
+        print('Dice Coefficient / F1 : {:.3f}'.format(dice * 100))
         print('==========================================')
         print('==========================================')
         return jaccard
@@ -351,7 +351,7 @@ end_time = time.time()
 print("--- Time taken to train : %s hours ---" % ((end_time - start_time)//3600))
 print("--- Time taken to train : %s mins ---" % ((end_time - start_time)//60))
 
-print("Max jaccard and dice: ", max(jacs)," and ", max(dices))
+print("Max Jaccard/IoU and Dice/F1 scores: ", max(jacs)," and ", max(dices))
 
 ########## Save logs ##########
 
