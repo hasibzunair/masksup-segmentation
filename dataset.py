@@ -29,9 +29,8 @@ class ISIC2018_dataloader(Dataset):
         self._labels = sorted(glob.glob(self._label_folder + "/*.png"))
         self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png")) # For heavy masking [::-1]
         
-        self.train_images, self.test_images, self.train_labels, self.test_labels, self.train_scribbles, self.test_scribbles = train_test_split(self._images, 
+        self.train_images, self.test_images, self.train_labels, self.test_labels = train_test_split(self._images, 
                                                                                                     self._labels,
-                                                                                                    self._scribbles[:len(self._images)],
                                                                                                     test_size=0.2, shuffle=False, random_state=0)
 
         
@@ -46,7 +45,7 @@ class ISIC2018_dataloader(Dataset):
         if self.is_train:
             img_path = self.train_images[idx]
             mask_path = self.train_labels[idx]
-            scribble_path = self._scribbles[np.random.randint(1000)] # pick randomly from scribbles
+            scribble_path = self._scribbles[np.random.randint(1000)] # pick randomly from first 1000 scribbles
         else:
             img_path = self.test_images[idx]
             mask_path = self.test_labels[idx]
@@ -69,15 +68,14 @@ class ISIC2018_dataloader(Dataset):
         mask = transforms_mask(mask)
         scribble = transforms_mask(scribble)
         
-        
-        # Partial image
-        
+        ###############################
         #partial_image1 = image * mask * cmask
         #partial_image2 = image * cmask * (1 - mask)
+        ###############################
         
-        partial_image1 = image * scribble
-        partial_image2 = image * (1 - scribble)
-        
+        # Masked image
+        partial_image1 = image * (torch.max(scribble) - scribble) 
+        partial_image2 = image * scribble
         
         sample = {'image': image, 
                   'mask': mask, 

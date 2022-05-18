@@ -91,7 +91,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_unet_cb_ts_a0.4b0.2g0.2"
+EXPERIMENT_NAME = "glas_levit192"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -128,11 +128,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-model = build_unet()
+#model = build_unet()
 #model = NestedUNet()
 #model = ODOC_seg_edge()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
+model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 # Send to GPU
@@ -271,9 +271,9 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        alpha = 0.4 # 25
-        beta = 0.2 # 1
-        gamma = 0.4 # 50
+        alpha = 1 # 25
+        beta = 1 # 1
+        gamma = 1 # 50
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
@@ -333,9 +333,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type
-    #train(model, epoch)
+    train(model, epoch)
     #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:
