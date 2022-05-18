@@ -12,6 +12,9 @@ import torch.nn.functional as F
 import os
 import matplotlib.pyplot as plt
 
+"""
+Taken from https://github.com/jeya-maria-jose/KiU-Net-pytorch
+"""
 
 class autoencoder(nn.Module):
     def __init__(self):
@@ -61,9 +64,7 @@ class unet(nn.Module):
         self.decoder2 =   nn.Conv2d(256, 128, 3, stride=1, padding=1)  # b, 8, 15, 1
         self.decoder3 =   nn.Conv2d(128, 64, 3, stride=1, padding=1)  # b, 1, 28, 28
         self.decoder4 =   nn.Conv2d(64, 32, 3, stride=1, padding=1)
-        self.decoder5 =   nn.Conv2d(32, 2, 3, stride=1, padding=1)
-        
-        self.soft = nn.Softmax(dim =1)
+        self.decoder5 =   nn.Conv2d(32, 1, 3, stride=1, padding=1)
 
     def forward(self, x):
 
@@ -88,10 +89,8 @@ class unet(nn.Module):
         out = F.relu(F.interpolate(self.decoder4(out),scale_factor=(2,2),mode ='bilinear'))
         out = torch.add(out,t1)
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
-        # print(out.shape)
-        
-        # out = self.soft(out)
         return out
+
 
 class kinetwithsk(nn.Module):
     def __init__(self):
@@ -139,6 +138,8 @@ class kinetwithsk(nn.Module):
         # out = self.soft(out)
         return out
 
+    
+
 class kitenet(nn.Module):
     
     def __init__(self):
@@ -181,7 +182,7 @@ class kiunet(nn.Module):
         super(kiunet, self).__init__()
         
 
-        self.encoder1 = nn.Conv2d(1, 16, 3, stride=1, padding=1)  # First Layer GrayScale Image , change to input channels to 3 in case of RGB 
+        self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  # First Layer GrayScale Image , change to input channels to 3 in case of RGB 
         self.en1_bn = nn.BatchNorm2d(16)
         self.encoder2=   nn.Conv2d(16, 32, 3, stride=1, padding=1)  
         self.en2_bn = nn.BatchNorm2d(32)
@@ -202,7 +203,7 @@ class kiunet(nn.Module):
         self.decoderf3 =   nn.Conv2d(16, 8, 3, stride=1, padding=1)
         self.def3_bn = nn.BatchNorm2d(8)
 
-        self.encoderf1 =   nn.Conv2d(1, 16, 3, stride=1, padding=1)  # First Layer GrayScale Image , change to input channels to 3 in case of RGB 
+        self.encoderf1 =   nn.Conv2d(3, 16, 3, stride=1, padding=1)  # First Layer GrayScale Image , change to input channels to 3 in case of RGB 
         self.enf1_bn = nn.BatchNorm2d(16)
         self.encoderf2=   nn.Conv2d(16, 32, 3, stride=1, padding=1)
         self.enf2_bn = nn.BatchNorm2d(32)
@@ -237,8 +238,7 @@ class kiunet(nn.Module):
         self.interd3_2 = nn.Conv2d(64,64,3, stride=1, padding=1)
         self.intd3_2bn = nn.BatchNorm2d(64)
 
-        self.final = nn.Conv2d(8,2,1,stride=1,padding=0)
-        
+        self.final = nn.Conv2d(8,1,1,stride=1,padding=0)
         self.soft = nn.Softmax(dim =1)
     
     def forward(self, x):
@@ -292,16 +292,11 @@ class kiunet(nn.Module):
         out = F.relu(self.de3_bn(F.interpolate(self.decoder3(out),scale_factor=(2,2),mode ='bilinear')))
         out1 = F.relu(self.def3_bn(F.max_pool2d(self.decoderf3(out1),2,2)))
 
-        
-
         out = torch.add(out,out1) # fusion of both branches
 
         out = F.relu(self.final(out))  #1*1 conv
-        
-
-        # out = self.soft(out)
-        
         return out
+
 
 class reskiunet(nn.Module):
     

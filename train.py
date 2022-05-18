@@ -24,6 +24,7 @@ from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
 from models.bigcn import ODOC_seg_edge
 from models.unetplusplus import NestedUNet
+from models.kiunet import unet, kiunet
 
 """Training script"""
 
@@ -91,7 +92,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_unet"
+EXPERIMENT_NAME = "glas_nestunet"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -114,7 +115,17 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 train_dataset = GLAS_dataloader("datasets/GLAS") # ISIC2018, GLAS
 test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
-train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
+
+# train_dataset = ISIC2018_dataloader("datasets/ISIC2018")
+# test_dataset = ISIC2018_dataloader("datasets/ISIC2018", is_train=False)
+
+# train_dataset = RITE_dataloader("datasets/RITE")
+# test_dataset = RITE_dataloader("datasets/RITE", is_train=False)
+
+# train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB")
+# test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False)
+
+train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -129,8 +140,9 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-model = build_unet()
-#model = NestedUNet()
+#model = unet()
+#model = kiunet()
+model = NestedUNet()
 #model = ODOC_seg_edge()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)

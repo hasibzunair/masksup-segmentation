@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 def iou_score(output, target):
     # Taken from https://github.com/4uiiurz1/pytorch-nested-unet/blob/master/metrics.py
-    smooth = 1e-5
+    smooth = 1e-30
 
     if torch.is_tensor(output):
         output = torch.sigmoid(output).data.cpu().numpy()
@@ -20,7 +20,7 @@ def iou_score(output, target):
 
 
 def dice_coef(output, target):
-    # https://stackoverflow.com/questions/61488732/how-calculate-the-dice-coefficient-for-multi-class-segmentation-task-using-pytho
+    # https://stackoverflow.com/questions/61488732/how-calculate-the-dice-coefficient-for-multi-class-segmentation-task-using-python
     
     if torch.is_tensor(output):
         output = torch.sigmoid(output).data.cpu().numpy()
@@ -36,7 +36,7 @@ def dice_coef(output, target):
     y_true_f = y_true.flatten()
     y_pred_f = y_pred.flatten()
     intersection = np.sum(y_true_f * y_pred_f)
-    smooth = 0.0001
+    smooth = 1e-30
     return (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
 
 

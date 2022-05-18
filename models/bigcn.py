@@ -153,5 +153,5 @@ class ODOC_seg_edge(nn.Module):
 
         seg_output = self.seg_layer(x4_rfb, x3_rfb, x2_rfb, edge)
         #seg_output = torch.nn.functional.interpolate(seg_output, size=(256, 256), mode='bilinear', align_corners=True)
-        seg_output = F.upsample(input=seg_output, size=(224, 224), mode='bilinear') # 224 for ISIC
+        seg_output = F.relu(F.upsample(input=seg_output, size=(224, 224), mode='bilinear')) # 224 for ISIC
         return seg_output
