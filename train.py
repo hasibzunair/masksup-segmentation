@@ -16,7 +16,7 @@ from torch.autograd import Variable
 from torch import Tensor
 
 from helpers import Logger
-from dataset import ISIC2018_dataloader, GLAS_dataloader
+from dataset import ISIC2018_dataloader, CVCLINICDB_dataloader, GLAS_dataloader, RITE_dataloader
 from metrics import iou_score, dice_coef
 from models.unet import build_unet
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
@@ -29,12 +29,12 @@ from models.kiunet import unet, kiunet
 """Training script"""
 
 ########## Reproducibility ##########
-
-random.seed(0)
-os.environ['PYTHONHASHSEED'] = str(0)
-np.random.seed(0)
-torch.manual_seed(0)
-torch.cuda.manual_seed(0)
+SEED = 42
+random.seed(SEED)
+os.environ['PYTHONHASHSEED'] = str(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
 if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
@@ -92,7 +92,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_nestunet"
+EXPERIMENT_NAME = "glas_levit384"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -113,17 +113,17 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 ########## Load data ##########
 
-train_dataset = GLAS_dataloader("datasets/GLAS") # ISIC2018, GLAS
+train_dataset = GLAS_dataloader("datasets/GLAS")
 test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
+
+# train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB")
+# test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False)
 
 # train_dataset = ISIC2018_dataloader("datasets/ISIC2018")
 # test_dataset = ISIC2018_dataloader("datasets/ISIC2018", is_train=False)
 
 # train_dataset = RITE_dataloader("datasets/RITE")
 # test_dataset = RITE_dataloader("datasets/RITE", is_train=False)
-
-# train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB")
-# test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False)
 
 train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
@@ -142,11 +142,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 # Define model
 #model = unet()
 #model = kiunet()
-model = NestedUNet()
+#model = NestedUNet()
 #model = ODOC_seg_edge()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -162,9 +162,10 @@ print("Trainable parameters ", all_train_params)
 
 ########## Setup optimizer and loss ##########
 
-optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 criterion_mse = nn.MSELoss()
+criterion_mae = nn.L1Loss()
 
 ########## Trainer and validation functions ##########
 
@@ -205,6 +206,7 @@ def train_context_branch(model, epoch, save_masks=True):
             masked_img = (masked_img.permute(1,2,0).detach().cpu().numpy()+1)/2
             masked_img = (masked_img*255).astype(np.uint8)
             masked_img = cv2.cvtColor(masked_img, cv2.COLOR_RGB2BGR)
+            #masked_img[masked_img==127] = 0
             cv2.imwrite("{}/samples/masked_imgs_cb/ep{}_b{}.png".format(LOG_PATH, epoch, batch_idx), masked_img)
         
         # Make predictions
@@ -247,6 +249,7 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
             masked_img = (masked_img.permute(1,2,0).detach().cpu().numpy()+1)/2
             masked_img = (masked_img*255).astype(np.uint8)
             masked_img = cv2.cvtColor(masked_img, cv2.COLOR_RGB2BGR)
+            #masked_img[masked_img==127] = 0
             cv2.imwrite("{}/samples/masked_imgs_cb_ts/ep{}_b{}.png".format(LOG_PATH, epoch, batch_idx), masked_img)
         
         # Make predictions
@@ -259,9 +262,9 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        alpha = 1 # 25
-        beta = 1 # 1
-        gamma = 1 # 50
+        alpha = 1
+        beta = 1
+        gamma = 1
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3

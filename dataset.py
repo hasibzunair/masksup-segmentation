@@ -2,6 +2,7 @@ import os
 import glob
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 import cv2
 import torchvision.transforms as transforms
 import torch
@@ -46,7 +47,7 @@ class ISIC2018_dataloader(Dataset):
         if self.is_train:
             img_path = self.train_images[idx]
             mask_path = self.train_labels[idx]
-            scribble_path = self._scribbles[np.random.randint(1000)] # pick randomly from first 1000 scribbles
+            scribble_path = self._scribbles[random.randint(0,950)] # pick randomly from first 1000 scribbles
         else:
             img_path = self.test_images[idx]
             mask_path = self.test_labels[idx]
@@ -110,7 +111,7 @@ class GLAS_dataloader(Dataset):
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking [::-1]
 
     def __len__(self):
         if self.is_train:
@@ -123,7 +124,7 @@ class GLAS_dataloader(Dataset):
         if self.is_train:
             img_path = self.train_images[idx]
             mask_path = self.train_labels[idx]
-            scribble_path = self._scribbles[np.random.randint(1000)] # pick randomly from first 1000 scribbles
+            scribble_path = self._scribbles[random.randint(0,950)] # pick randomly from first 1000 scribbles
         else:
             img_path = self.test_images[idx]
             mask_path = self.test_labels[idx]
@@ -177,9 +178,9 @@ class CVCLINICDB_dataloader(Dataset):
         self._input_folder = os.path.join(self._data_folder, 'Original')
         self._label_folder = os.path.join(self._data_folder, 'GroundTruth')
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
-        self._images = sorted(glob.glob(self._input_folder + "/*.png"))
-        self._labels = sorted(glob.glob(self._label_folder + "/*.png"))
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))
+        self._images = glob.glob(self._input_folder + "/*.png")
+        self._labels = glob.glob(self._label_folder + "/*.png")
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking use [::-1]
         
         #import ipdb; ipdb.set_trace()
         
@@ -200,7 +201,7 @@ class CVCLINICDB_dataloader(Dataset):
         if self.is_train:
             img_path = self.train_images[idx]
             mask_path = self.train_labels[idx]
-            scribble_path = self._scribbles[np.random.randint(1000)] # pick randomly from first 1000 scribbles
+            scribble_path = self._scribbles[random.randint(0,950)] # pick randomly from first 1000 scribbles
         else:
             img_path = self.test_images[idx]
             mask_path = self.test_labels[idx]
@@ -277,7 +278,7 @@ class RITE_dataloader(Dataset):
         if self.is_train:
             img_path = self.train_images[idx]
             mask_path = self.train_labels[idx]
-            scribble_path = self._scribbles[np.random.randint(1000)] # pick randomly from first 1000 scribbles
+            scribble_path = self._scribbles[random.randint(0,950)] # pick randomly from first 1000 scribbles
         else:
             img_path = self.test_images[idx]
             mask_path = self.test_labels[idx]
@@ -288,17 +289,17 @@ class RITE_dataloader(Dataset):
         mask = cv2.imread(mask_path, 0)
         mask[mask<=127] = 0
         mask[mask>127] = 1
-        mask = cv2.resize(mask, (224, 224), interpolation = cv2.INTER_AREA)
+        mask = cv2.resize(mask, (128, 128), interpolation = cv2.INTER_AREA)
         mask = np.expand_dims(mask, axis=0)
         scribble = Image.open(scribble_path).convert('P')
         
         
-        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
+        transforms_image = transforms.Compose([transforms.Resize((128, 128)), transforms.CenterCrop((128,128)),
                                              transforms.ToTensor(),
                                             transforms.Normalize((0.5, 0.5, 0.5),
                                                 (0.5, 0.5, 0.5))])
         
-        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
+        transforms_mask = transforms.Compose([transforms.Resize((128, 128)), transforms.CenterCrop((128,128)),
                                              transforms.ToTensor()])
         
         image = transforms_image(image)
