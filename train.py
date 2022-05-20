@@ -262,9 +262,9 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        alpha = 1
-        beta = 1
-        gamma = 1
+        alpha = 0.4
+        beta = 0.2
+        gamma = 0.4
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
