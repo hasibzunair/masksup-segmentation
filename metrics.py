@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from sklearn.metrics import roc_auc_score, jaccard_score
 
 def iou_score(output, target):
     # Taken from https://github.com/4uiiurz1/pytorch-nested-unet/blob/master/metrics.py
@@ -47,3 +48,29 @@ def dice_coef(output, target):
 #     intersection = np.sum(y_true_f * y_pred_f)
 #     smooth = 0.0001
 #     return (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
+
+
+from sklearn.metrics import roc_auc_score, jaccard_score
+
+def calculate_metric_percase(pred, gt):
+    
+    if torch.is_tensor(pred):
+        pred = torch.sigmoid(pred).data.cpu().numpy() > 0.5
+    if torch.is_tensor(gt):
+        gt = gt.data.cpu().numpy()
+        
+    def dice_coef(y_true, y_pred, smooth=1):
+        """
+        Dice = (2*|X & Y|)/ (|X|+ |Y|)
+             =  2*sum(|A*B|)/(sum(A^2)+sum(B^2))
+        ref: https://arxiv.org/pdf/1606.04797v1.pdf
+        """
+        intersection = np.sum(y_true * y_pred)
+        return (2. * intersection + smooth) / (np.sum(y_true) + np.sum(y_pred) + smooth)
+
+    dice = dice_coef(gt, pred)
+    
+    #import ipdb; ipdb.set_trace()
+    AUC = roc_auc_score(gt.flatten(), pred.flatten())
+    jc = jaccard_score(gt.flatten(), pred.flatten())
+    return dice, jc, AUC

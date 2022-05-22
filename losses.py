@@ -2,40 +2,42 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-"""Taken from https://github.com/4uiiurz1/pytorch-nested-unet/blob/master/losses.py"""
+"""Taken from 
+https://github.com/4uiiurz1/pytorch-nested-unet/blob/master/losses.py
+https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch/notebook
+"""
 
 try:
     from LovaszSoftmax.pytorch.lovasz_losses import lovasz_hinge
 except ImportError:
     pass
 
-__all__ = ['BCEDiceLoss', 'LovaszHingeLoss']
+__all__ = ['DiceLoss', 'BCEDiceLoss', 'LovaszHingeLoss']
 
 
-# class DiceLoss(nn.Module):
-#     """
-#     Dice loss implementation: https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch/notebook
-#     Usage: criterion = DiceLoss()
-#     """
+class DiceLoss(nn.Module):
+    """
+    Dice loss implementation: https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch/notebook
+    Usage: criterion = DiceLoss()
+    """
     
-#     def __init__(self, weight=None, size_average=True):
-#         super(DiceLoss, self).__init__()
+    def __init__(self, weight=None, size_average=True):
+        super(DiceLoss, self).__init__()
 
-#     def forward(self, inputs, targets, smooth=1):
+    def forward(self, inputs, targets, smooth=1):
         
-#         #comment out if your model contains a sigmoid or equivalent activation layer
-#         inputs = F.sigmoid(inputs)       
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        inputs = F.sigmoid(inputs)       
         
-#         #flatten label and prediction tensors
-#         inputs = inputs.view(-1)
-#         targets = targets.view(-1)
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
         
-#         intersection = (inputs * targets).sum()                            
-#         dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
+        intersection = (inputs * targets).sum()                            
+        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
         
-#         return 1 - dice
-
-
+        return 1 - dice
+    
 class BCEDiceLoss(nn.Module):
     def __init__(self):
         super().__init__()

@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+import torch.nn.init as init
 
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, utils
@@ -17,7 +18,8 @@ from torch import Tensor
 
 from helpers import Logger
 from dataset import ISIC2018_dataloader, CVCLINICDB_dataloader, GLAS_dataloader, RITE_dataloader
-from metrics import iou_score, dice_coef
+from metrics import iou_score, dice_coef, calculate_metric_percase
+from losses import DiceLoss
 from models.unet import build_unet
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
@@ -29,16 +31,49 @@ from models.kiunet import unet, kiunet
 """Training script"""
 
 ########## Reproducibility ##########
-SEED = 42
+# https://sajjjadayobi.github.io/blog/tips/2021/02/24/reproducibility.html
+SEED = 0
 random.seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
 if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
-
+    
+def weight_init(m):
+    '''
+    Usage:
+        model = Model()
+        model.apply(weight_init)
+    '''
+    if isinstance(m, nn.Conv1d):
+        init.normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.Conv2d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.Conv3d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.ConvTranspose1d):
+        init.normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.ConvTranspose2d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.ConvTranspose3d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+            
 
 ########## Get Args ##########
 
@@ -92,7 +127,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_levit384_cb_ts_h" #########################################
+EXPERIMENT_NAME = "glas_unet" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -140,16 +175,18 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-#model = unet()
+model = unet()
 #model = kiunet()
 #model = NestedUNet()
 #model = ODOC_seg_edge()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+
 
 # Send to GPU
 model = model.to(DEVICE)
+#model.apply(weight_init)
 print(model)
 
 # All parameters
@@ -262,9 +299,9 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
-        alpha = 0.4
-        beta = 0.2
-        gamma = 0.4
+        alpha = 1
+        beta = 1
+        gamma = 1
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
@@ -289,9 +326,11 @@ def test(model):
             data, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(data.float())
             test_loss += criterion(output.float(), target.float()).item()
-            jaccard += iou_score(output, target)
-            dice += dice_coef(output, target)
-            
+            dc, jc, _ = calculate_metric_percase(output, target)
+            jaccard += jc
+            dice += dc
+            #jaccard += iou_score(output, target)
+            #dice += dice_coef(output, target)
         test_loss /= len(test_dataloader)
         jaccard /= len(test_dataloader)
         dice /= len(test_dataloader)
@@ -299,7 +338,6 @@ def test(model):
         losses.append(test_loss)
         jacs.append(jaccard)
         dices.append(dice)
-
 
         print('Average Loss: {:.3f}'.format(test_loss))
         print('Jaccard Index / IoU : {:.3f}'.format(jaccard * 100))
@@ -323,9 +361,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type #########################################
-    #train(model, epoch)
+    train(model, epoch)
     #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:

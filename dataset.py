@@ -111,7 +111,7 @@ class GLAS_dataloader(Dataset):
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking [::-1]
 
     def __len__(self):
         if self.is_train:
@@ -180,7 +180,7 @@ class CVCLINICDB_dataloader(Dataset):
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
         self._images = glob.glob(self._input_folder + "/*.png")
         self._labels = glob.glob(self._label_folder + "/*.png")
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking use [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking use [::-1]
         
         #import ipdb; ipdb.set_trace()
         
@@ -289,17 +289,17 @@ class RITE_dataloader(Dataset):
         mask = cv2.imread(mask_path, 0)
         mask[mask<=127] = 0
         mask[mask>127] = 1
-        mask = cv2.resize(mask, (128, 128), interpolation = cv2.INTER_AREA)
+        mask = cv2.resize(mask, (224, 224), interpolation = cv2.INTER_AREA)
         mask = np.expand_dims(mask, axis=0)
         scribble = Image.open(scribble_path).convert('P')
         
         
-        transforms_image = transforms.Compose([transforms.Resize((128, 128)), transforms.CenterCrop((128,128)),
+        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
                                              transforms.ToTensor(),
                                             transforms.Normalize((0.5, 0.5, 0.5),
                                                 (0.5, 0.5, 0.5))])
         
-        transforms_mask = transforms.Compose([transforms.Resize((128, 128)), transforms.CenterCrop((128,128)),
+        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
                                              transforms.ToTensor()])
         
         image = transforms_image(image)

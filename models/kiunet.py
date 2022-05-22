@@ -89,7 +89,7 @@ class unet(nn.Module):
         out = F.relu(F.interpolate(self.decoder4(out),scale_factor=(2,2),mode ='bilinear'))
         out = torch.add(out,t1)
         #out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
-        out = F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear')
+        out = F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear') # using sigmoid in loss
         return out
 
 
