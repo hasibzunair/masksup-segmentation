@@ -20,13 +20,12 @@ from helpers import Logger
 from dataset import ISIC2018_dataloader, CVCLINICDB_dataloader, GLAS_dataloader, RITE_dataloader
 from metrics import iou_score, dice_coef, calculate_metric_percase
 from losses import DiceLoss
-from models.unet import build_unet
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
-from models.bigcn import ODOC_seg_edge
 from models.unetplusplus import NestedUNet
-from models.kiunet import unet, kiunet
+from models.kiunet import unet
+from models.resunet import ResUnet
 
 """Training script"""
 
@@ -42,38 +41,7 @@ torch.cuda.manual_seed_all(SEED)
 if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
-    
-def weight_init(m):
-    '''
-    Usage:
-        model = Model()
-        model.apply(weight_init)
-    '''
-    if isinstance(m, nn.Conv1d):
-        init.normal_(m.weight.data)
-        if m.bias is not None:
-            init.normal_(m.bias.data)
-    elif isinstance(m, nn.Conv2d):
-        init.xavier_normal_(m.weight.data)
-        if m.bias is not None:
-            init.normal_(m.bias.data)
-    elif isinstance(m, nn.Conv3d):
-        init.xavier_normal_(m.weight.data)
-        if m.bias is not None:
-            init.normal_(m.bias.data)
-    elif isinstance(m, nn.ConvTranspose1d):
-        init.normal_(m.weight.data)
-        if m.bias is not None:
-            init.normal_(m.bias.data)
-    elif isinstance(m, nn.ConvTranspose2d):
-        init.xavier_normal_(m.weight.data)
-        if m.bias is not None:
-            init.normal_(m.bias.data)
-    elif isinstance(m, nn.ConvTranspose3d):
-        init.xavier_normal_(m.weight.data)
-        if m.bias is not None:
-            init.normal_(m.bias.data)
-            
+
 
 ########## Get Args ##########
 
@@ -127,7 +95,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_unet" #########################################
+EXPERIMENT_NAME = "glas_levit128_cb_ts_e" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -175,11 +143,10 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-model = unet()
-#model = kiunet()
+#model = unet()
+#model = ResUnet()
 #model = NestedUNet()
-#model = ODOC_seg_edge()
-#model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
+model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
@@ -293,7 +260,7 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         output1 = model.forward(data1.float())
         output2 = model.forward(data2.float())
 
-        # Compute loss based on two outputs, and enforce similarity
+        # Compute loss based on two outputs, and maximize similarity
         loss1 = criterion(output1.float(), target.float())
         loss2 = criterion(output2.float(), target.float())
         loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
@@ -361,9 +328,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type #########################################
-    train(model, epoch)
+    #train(model, epoch)
     #train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:
