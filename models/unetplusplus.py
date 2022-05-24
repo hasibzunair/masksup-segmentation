@@ -138,5 +138,5 @@ class NestedUNet(nn.Module):
             return [output1, output2, output3, output4]
 
         else:
-            output = F.relu(self.final(x0_4))
+            output = self.final(x0_4)
             return output

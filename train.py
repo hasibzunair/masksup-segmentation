@@ -95,7 +95,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_levit128_cb_ts_e" #########################################
+EXPERIMENT_NAME = "glas_nestunet_cb_h" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -128,7 +128,7 @@ test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
 # train_dataset = RITE_dataloader("datasets/RITE")
 # test_dataset = RITE_dataloader("datasets/RITE", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8) # 8
+train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -145,8 +145,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 # Define model
 #model = unet()
 #model = ResUnet()
-#model = NestedUNet()
-model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
+model = NestedUNet()
+#model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
