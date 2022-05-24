@@ -95,7 +95,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_nestunet_cb_h" #########################################
+EXPERIMENT_NAME = "cvc_unet_cb_ts_h" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -116,11 +116,11 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 ########## Load data ##########
 
-train_dataset = GLAS_dataloader("datasets/GLAS")
-test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
+# train_dataset = GLAS_dataloader("datasets/GLAS")
+# test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
 
-# train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB")
-# test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False)
+train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB")
+test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False)
 
 # train_dataset = ISIC2018_dataloader("datasets/ISIC2018")
 # test_dataset = ISIC2018_dataloader("datasets/ISIC2018", is_train=False)
@@ -143,9 +143,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-#model = unet()
-#model = ResUnet()
-model = NestedUNet()
+model = unet()
+#model = NestedUNet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
