@@ -95,7 +95,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "cvc_unet_cb_ts_h" #########################################
+EXPERIMENT_NAME = "cvc_levit384_cb_ts_e" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -143,11 +143,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-model = unet()
+#model = unet()
 #model = NestedUNet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
+model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
 
 # Send to GPU

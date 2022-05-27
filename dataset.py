@@ -180,7 +180,7 @@ class CVCLINICDB_dataloader(Dataset):
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
         self._images = glob.glob(self._input_folder + "/*.png")
         self._labels = glob.glob(self._label_folder + "/*.png")
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking use [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking use [::-1]
         
         #import ipdb; ipdb.set_trace()
         
