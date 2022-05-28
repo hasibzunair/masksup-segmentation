@@ -92,6 +92,9 @@ class ISIC2018_dataloader(Dataset):
 
 
 class GLAS_dataloader(Dataset):
+    """
+    GLAS data loader with Irregular Masks Dataset (https://arxiv.org/abs/1804.07723)
+    """
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
         self._data_folder = data_folder
@@ -163,6 +166,9 @@ class GLAS_dataloader(Dataset):
 
     
 class CVCLINICDB_dataloader(Dataset):
+    """
+    CVCClinicDB data loader with Irregular Masks Dataset (https://arxiv.org/abs/1804.07723)
+    """
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
         self._data_folder = data_folder
@@ -233,6 +239,9 @@ class CVCLINICDB_dataloader(Dataset):
     
 
 class RITE_dataloader(Dataset):
+    """
+    RITE data loader with Irregular Masks Dataset (https://arxiv.org/abs/1804.07723)
+    """
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
         self._data_folder = data_folder
