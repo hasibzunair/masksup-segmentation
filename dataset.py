@@ -29,7 +29,7 @@ class ISIC2018_dataloader(Dataset):
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
         self._images = sorted(glob.glob(self._input_folder + "/*.jpg"))
         self._labels = sorted(glob.glob(self._label_folder + "/*.png"))
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png")) # For heavy masking [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking [::-1]
         
         self.train_images, self.test_images, self.train_labels, self.test_labels = train_test_split(self._images, 
                                                                                                     self._labels,
