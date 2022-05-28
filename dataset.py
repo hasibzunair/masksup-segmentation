@@ -13,10 +13,9 @@ from torch.utils.data import Dataset
 
 """Dataset classes"""
 
-
 class ISIC2018_dataloader(Dataset):
     """
-    ISIC 2018 data loader with Irregular Masks Dataset.
+    ISIC 2018 data loader with Irregular Masks Dataset (https://arxiv.org/abs/1804.07723)
     """
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
@@ -33,9 +32,10 @@ class ISIC2018_dataloader(Dataset):
         
         self.train_images, self.test_images, self.train_labels, self.test_labels = train_test_split(self._images, 
                                                                                                     self._labels,
-                                                                                                    test_size=0.2, shuffle=False, random_state=0)
+                                                                                                    test_size=0.2,
+                                                                                                    shuffle=False, 
+                                                                                                    random_state=0)
 
-        
     def __len__(self):
         if self.is_train:
             return len(self.train_images)
@@ -43,7 +43,6 @@ class ISIC2018_dataloader(Dataset):
             return len(self.test_images)
 
     def __getitem__(self, idx):
-        
         if self.is_train:
             img_path = self.train_images[idx]
             mask_path = self.train_labels[idx]
@@ -52,31 +51,31 @@ class ISIC2018_dataloader(Dataset):
             img_path = self.test_images[idx]
             mask_path = self.test_labels[idx]
             scribble_path = self._scribbles[idx]
-            
         
+        # Read image, mask and scribble
         image = Image.open(img_path).convert('RGB')
         mask = cv2.imread(mask_path, 0)
-        
         mask[mask<=127] = 0
         mask[mask>127] = 1
         mask = cv2.resize(mask, (224, 224), interpolation = cv2.INTER_AREA)
         mask = np.expand_dims(mask, axis=0)
         scribble = Image.open(scribble_path).convert('P')
         
+        transforms_image = transforms.Compose([transforms.Resize((224, 224)), 
+                                               transforms.CenterCrop((224,224)),
+                                               transforms.ToTensor(),
+                                               transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5))])
+        transforms_mask = transforms.Compose([transforms.Resize((224, 224)),
+                                              transforms.CenterCrop((224,224)),
+                                              transforms.ToTensor()])
         
-        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor(),
-                                            transforms.Normalize((0.5, 0.5, 0.5),
-                                                (0.5, 0.5, 0.5))])
-        
-        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor()])
-        
+        # Convert to torch tensors
         image = transforms_image(image)
         mask = torch.from_numpy(mask)
         scribble = transforms_mask(scribble)
         
         ###############################
+        # TODO
         #partial_image1 = image * mask * cmask
         #partial_image2 = image * cmask * (1 - mask)
         ###############################
@@ -130,7 +129,7 @@ class GLAS_dataloader(Dataset):
             mask_path = self.test_labels[idx]
             scribble_path = self._scribbles[idx]
             
-        
+        # Read image, mask and scribble
         image = Image.open(img_path).convert('RGB')
         mask = cv2.imread(mask_path, 0)
         mask[mask<=127] = 0
@@ -139,24 +138,19 @@ class GLAS_dataloader(Dataset):
         mask = np.expand_dims(mask, axis=0)
         scribble = Image.open(scribble_path).convert('P')
         
+        transforms_image = transforms.Compose([transforms.Resize((224, 224)), 
+                                               transforms.CenterCrop((224,224)),
+                                               transforms.ToTensor(),
+                                               transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5))])
+        transforms_mask = transforms.Compose([transforms.Resize((224, 224)),
+                                              transforms.CenterCrop((224,224)),
+                                              transforms.ToTensor()])
         
-        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor(),
-                                            transforms.Normalize((0.5, 0.5, 0.5),
-                                                (0.5, 0.5, 0.5))])
-        
-        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor()])
-        
+        # Convert to torch tensors
         image = transforms_image(image)
         mask = torch.from_numpy(mask)
         scribble = transforms_mask(scribble)
-        
-        ###############################
-        #partial_image1 = image * mask * cmask
-        #partial_image2 = image * cmask * (1 - mask)
-        ###############################
-        
+
         # Masked image
         partial_image1 = image * (torch.max(scribble) - scribble) 
         partial_image2 = image * scribble
@@ -180,16 +174,14 @@ class CVCLINICDB_dataloader(Dataset):
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
         self._images = glob.glob(self._input_folder + "/*.png")
         self._labels = glob.glob(self._label_folder + "/*.png")
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking use [::-1]
-        
-        #import ipdb; ipdb.set_trace()
-        
-        self.train_images, self.test_images, self.train_labels, self.test_labels, self.train_scribbles, self.test_scribbles = train_test_split(self._images, 
-                                                                                                    self._labels,
-                                                                                                    self._scribbles[:len(self._images)],
-                                                                                                    test_size=0.1, shuffle=False, random_state=0)
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking [::-1]
 
-        
+        self.train_images, self.test_images, self.train_labels, self.test_labels = train_test_split(self._images, 
+                                                                                                    self._labels,
+                                                                                                    test_size=0.1,
+                                                                                                    shuffle=False,
+                                                                                                    random_state=0)
+    
     def __len__(self):
         if self.is_train:
             return len(self.train_images)
@@ -207,7 +199,7 @@ class CVCLINICDB_dataloader(Dataset):
             mask_path = self.test_labels[idx]
             scribble_path = self._scribbles[idx]
             
-        
+        # Read image, mask and scribble
         image = Image.open(img_path).convert('RGB')
         mask = cv2.imread(mask_path, 0)
         mask[mask<=127] = 0
@@ -216,24 +208,19 @@ class CVCLINICDB_dataloader(Dataset):
         mask = np.expand_dims(mask, axis=0)
         scribble = Image.open(scribble_path).convert('P')
         
+        transforms_image = transforms.Compose([transforms.Resize((224, 224)), 
+                                               transforms.CenterCrop((224,224)),
+                                               transforms.ToTensor(),
+                                               transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5))])
+        transforms_mask = transforms.Compose([transforms.Resize((224, 224)),
+                                              transforms.CenterCrop((224,224)),
+                                              transforms.ToTensor()])
         
-        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor(),
-                                            transforms.Normalize((0.5, 0.5, 0.5),
-                                                (0.5, 0.5, 0.5))])
-        
-        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor()])
-        
+        # Conver to torch tensors
         image = transforms_image(image)
         mask = torch.from_numpy(mask)
         scribble = transforms_mask(scribble)
-        
-        ###############################
-        #partial_image1 = image * mask * cmask
-        #partial_image2 = image * cmask * (1 - mask)
-        ###############################
-        
+
         # Masked image
         partial_image1 = image * (torch.max(scribble) - scribble) 
         partial_image2 = image * scribble
@@ -244,7 +231,6 @@ class CVCLINICDB_dataloader(Dataset):
                   'partial_image2': partial_image2}
         return sample
     
-
 
 class RITE_dataloader(Dataset):
     def __init__(self, data_folder, is_train=True):
@@ -284,7 +270,7 @@ class RITE_dataloader(Dataset):
             mask_path = self.test_labels[idx]
             scribble_path = self._scribbles[idx]
             
-        
+        # Read image, mask and scribble
         image = Image.open(img_path).convert('RGB')
         mask = cv2.imread(mask_path, 0)
         mask[mask<=127] = 0
@@ -293,24 +279,18 @@ class RITE_dataloader(Dataset):
         mask = np.expand_dims(mask, axis=0)
         scribble = Image.open(scribble_path).convert('P')
         
-        
-        transforms_image = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor(),
-                                            transforms.Normalize((0.5, 0.5, 0.5),
-                                                (0.5, 0.5, 0.5))])
-        
-        transforms_mask = transforms.Compose([transforms.Resize((224, 224)), transforms.CenterCrop((224,224)),
-                                             transforms.ToTensor()])
-        
+        transforms_image = transforms.Compose([transforms.Resize((224, 224)), 
+                                               transforms.CenterCrop((224,224)),
+                                               transforms.ToTensor(),
+                                               transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5))])
+        transforms_mask = transforms.Compose([transforms.Resize((224, 224)),
+                                              transforms.CenterCrop((224,224)),
+                                              transforms.ToTensor()])
+        # Convert to torch tensors
         image = transforms_image(image)
         mask = torch.from_numpy(mask)
         scribble = transforms_mask(scribble)
-        
-        ###############################
-        #partial_image1 = image * mask * cmask
-        #partial_image2 = image * cmask * (1 - mask)
-        ###############################
-        
+
         # Masked image
         partial_image1 = image * (torch.max(scribble) - scribble) 
         partial_image2 = image * scribble
