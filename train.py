@@ -95,7 +95,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "isic_unet_cb_e" #########################################
+EXPERIMENT_NAME = "isic_unet_cb_ts_e" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -328,8 +328,8 @@ for epoch in range(1, N_EPOCHS):
     
     # Trainer type #########################################
     #train(model, epoch)
-    train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:
