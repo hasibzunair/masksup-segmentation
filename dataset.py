@@ -333,7 +333,7 @@ class POLYPS_dataloader(Dataset):
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
         self._scribbles_folder = os.path.join(self._data_folder, "TrainDataset", 'SCRIBBLES')
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking [::-1]
 
     def __len__(self):
         if self.is_train:
