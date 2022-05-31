@@ -5,7 +5,11 @@
 
 ## 1. Specification of dependencies
 
-This code requires Python 3.8.12. Run `conda env create -f env.yml` to install the required packages.
+This code requires Python 3.8.12. Run the following to install the required packages.
+```
+conda create --name msl python=3.8
+pip install -r requirements.txt
+```
 
 ## 2a. Training code
 Data detail goes here. TODO
