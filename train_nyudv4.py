@@ -271,7 +271,7 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         # Compute loss based on two outputs, and maximize similarity
         loss1 = cross_entropy2d(output1.float(), target.long())
         loss2 = cross_entropy2d(output2.float(), target.long())
-        loss3 = criterion_mse(output1.long(), output2.long())
+        loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
         alpha = 1
@@ -312,8 +312,6 @@ def test(model):
                 .argmax(axis=2)
                 .astype(np.uint8)
             )
-            
-            
             jc = jaccard_score(target.data.cpu().numpy().flatten(), output.flatten(), average='micro') 
             jaccard += jc
 
