@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_rflw152"
+EXPERIMENT_NAME = "nyu_unet"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -119,7 +119,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 train_dataset = NYUDV2_dataloader("datasets/NYUDV2")
 test_dataset = NYUDV2_dataloader("datasets/NYUDV2", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=8) # 8
+train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -134,11 +134,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-#model = unet()
+model = unet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
-model = rf_lw152(40, imagenet=True)
+#model = rf_lw152(40, imagenet=True)
 
 # Send to GPU
 model = model.to(DEVICE)
