@@ -64,7 +64,7 @@ class unet(nn.Module):
         self.decoder2 =   nn.Conv2d(256, 128, 3, stride=1, padding=1)  # b, 8, 15, 1
         self.decoder3 =   nn.Conv2d(128, 64, 3, stride=1, padding=1)  # b, 1, 28, 28
         self.decoder4 =   nn.Conv2d(64, 32, 3, stride=1, padding=1)
-        self.decoder5 =   nn.Conv2d(32, 1, 3, stride=1, padding=1)
+        self.decoder5 =   nn.Conv2d(32, 40, 3, stride=1, padding=1)
 
     def forward(self, x):
 
