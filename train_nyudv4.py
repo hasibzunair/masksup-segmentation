@@ -24,9 +24,8 @@ from losses import DiceLoss
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
-from models.unetplusplus import NestedUNet
 from models.kiunet import unet
-from models.resunet import ResUnet
+from models.resnet import rf_lw50, rf_lw101, rf_lw152
 
 """Training script"""
 
@@ -97,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_unet"
+EXPERIMENT_NAME = "nyu_rflw152"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -135,11 +134,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-model = unet()
+#model = unet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
-
+#model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
+model = rf_lw152(40, imagenet=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -156,6 +155,8 @@ print("Trainable parameters ", all_train_params)
 ########## Setup optimizer and loss ##########
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
+
+criterion_mse = nn.MSELoss()
 
 def cross_entropy2d(input, target, weight=None, size_average=True):
     """
@@ -270,7 +271,7 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         # Compute loss based on two outputs, and maximize similarity
         loss1 = cross_entropy2d(output1.float(), target.long())
         loss2 = cross_entropy2d(output2.float(), target.long())
-        loss3 = criterion_mse(torch.sigmoid(output1.long()), torch.sigmoid(output2.long()))
+        loss3 = criterion_mse(output1.long(), output2.long())
         
         # Loss coefficients
         alpha = 1
@@ -299,7 +300,19 @@ def test(model):
             data, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(data.float())
             test_loss += cross_entropy2d(output.float(), target.long()).item()
-            output = output.data.max(1)[1].squeeze().cpu().numpy() 
+            
+            #output = output.data.max(1)[1].squeeze().cpu().numpy() 
+            # OR
+            output = (
+                cv2.resize(
+                    output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
+                    target.size()[1:][::-1],
+                    interpolation=cv2.INTER_CUBIC,
+                )
+                .argmax(axis=2)
+                .astype(np.uint8)
+            )
+            
             
             jc = jaccard_score(target.data.cpu().numpy().flatten(), output.flatten(), average='micro') 
             jaccard += jc
@@ -355,7 +368,17 @@ for epoch in range(1, N_EPOCHS):
             gt = target.squeeze().data.cpu().numpy()
             gt = cmap[gt]
 
-            pred = output.data.max(1)[1].squeeze().cpu().numpy()
+            #pred = output.data.max(1)[1].squeeze().cpu().numpy()
+            # OR
+            pred = (
+                cv2.resize(
+                    output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
+                    target.size()[1:][::-1],
+                    interpolation=cv2.INTER_CUBIC,
+                )
+                .argmax(axis=2)
+                .astype(np.uint8)
+            )
             pred = cmap[pred]
             
             cv2.imwrite(os.path.join(LOG_PATH, "vis", "imgs/")+str(batch_idx)+'.png', img)

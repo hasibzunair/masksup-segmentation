@@ -59,7 +59,7 @@ class NYUDV2_dataloader(Dataset):
         image = Image.open(img_path).convert('RGB')
         mask = np.array(Image.open(mask_path))
         mask = cv2.resize(mask, (224, 224), interpolation = cv2.INTER_NEAREST)
-        mask[mask==255] = 0
+        mask[mask==255] = 0 # 255 lable is ignored
         scribble = Image.open(scribble_path).convert('P')
 
         transforms_image = transforms.Compose([transforms.Resize((224, 224)), 
