@@ -292,8 +292,12 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         output2 = pred_mask(output2, target)
         
         #import ipdb; ipdb.set_trace()
+        # Without pred_mask function
         #loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float())) # 45.492
+        
         loss3 = criterion_mse(output1.float(), output2.float())
+        # Try
+        #loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
         alpha = 1
