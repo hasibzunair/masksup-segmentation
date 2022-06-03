@@ -18,7 +18,7 @@ from torch import Tensor
 
 from helpers import Logger
 from dataset import ISIC2018_dataloader, CVCLINICDB_dataloader, GLAS_dataloader, RITE_dataloader, POLYPS_dataloader
-from metrics import iou_score, dice_coef, calculate_metric_percase
+from metrics import calculate_metric_percase
 from losses import DiceLoss
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
@@ -95,7 +95,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "polys_levit384_cb_h" #########################################
+EXPERIMENT_NAME = "polys_levit384_cb_ts_h" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -330,8 +330,8 @@ for epoch in range(1, N_EPOCHS):
     
     # Trainer type #########################################
     #train(model, epoch)
-    train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:
