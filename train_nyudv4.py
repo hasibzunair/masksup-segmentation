@@ -157,10 +157,12 @@ print("Trainable parameters ", all_train_params)
 ########## Setup optimizer and loss ##########
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
+# 1e-4, nyu lw50
+# 
 
 criterion_mse = nn.MSELoss()
 
-def cross_entropy2d(input, target, weight=None, size_average=True):
+def cross_entropy2d(input, target, weight=None, reduction="mean"):
     """
     Taken from # https://github.com/shashankag14/Cityscapes-Segmentation/blob/master/Cityscapes-R2UNET.ipynb
     """
@@ -174,9 +176,21 @@ def cross_entropy2d(input, target, weight=None, size_average=True):
     input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
     target = target.view(-1)
     loss = F.cross_entropy(
-        input, target, weight=weight, size_average=size_average, ignore_index=255
+        input, target, weight=weight, reduction=reduction, ignore_index=255
     )
     return loss
+
+def pred_mask(input, target):
+    """
+    Conv script
+    """
+    n, c, h, w = input.size()
+    nt, ht, wt = target.size()
+    # Handle inconsistent size between input and target
+    if h != ht and w != wt:  # upsample labels
+        input = F.interpolate(input, size=(ht, wt), mode="bilinear", align_corners=True)
+    input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
+    return input
 
 
 ########## Trainer and validation functions ##########
@@ -273,8 +287,12 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         # Compute loss based on two outputs, and maximize similarity
         loss1 = cross_entropy2d(output1.float(), target.long())
         loss2 = cross_entropy2d(output2.float(), target.long())
-        #loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float())) # 45.492
         
+        output1 = pred_mask(output1, target)
+        output2 = pred_mask(output2, target)
+        
+        #import ipdb; ipdb.set_trace()
+        #loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float())) # 45.492
         loss3 = criterion_mse(output1.float(), output2.float())
         
         # Loss coefficients
@@ -305,8 +323,6 @@ def test(model):
             output = model(data.float())
             test_loss += cross_entropy2d(output.float(), target.long()).item()
             
-            #output = output.data.max(1)[1].squeeze().cpu().numpy() 
-            # OR
             output = (
                 cv2.resize(
                     output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
@@ -370,8 +386,6 @@ for epoch in range(1, N_EPOCHS):
             gt = target.squeeze().data.cpu().numpy()
             gt = cmap[gt]
 
-            #pred = output.data.max(1)[1].squeeze().cpu().numpy()
-            # OR
             pred = (
                 cv2.resize(
                     output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
