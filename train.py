@@ -156,7 +156,7 @@ print("Trainable parameters ", all_train_params)
 
 ########## Setup optimizer and loss ##########
 
-optimizer = optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5, amsgrad=True) # prev 1e-4
+optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True) # prev 1e-4
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # maximize mIOU score
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 criterion_mse = nn.MSELoss()
