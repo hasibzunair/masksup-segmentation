@@ -17,7 +17,7 @@ from torch.autograd import Variable
 from torch import Tensor
 
 from helpers import Logger
-from dataset import ISIC2018_dataloader, CVCLINICDB_dataloader, GLAS_dataloader, RITE_dataloader, POLYPS_dataloader
+from dataset import GLAS_dataloader, POLYPS_dataloader
 from metrics import calculate_metric_percase
 from losses import DiceLoss
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
@@ -30,7 +30,7 @@ from models.resunet import ResUnet
 """Training script"""
 
 ########## Reproducibility ##########
-# https://sajjjadayobi.github.io/blog/tips/2021/02/24/reproducibility.html
+
 SEED = 0
 random.seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
@@ -40,9 +40,9 @@ torch.cuda.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
 if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.benchmark = False # True
 
-
+    
 ########## Get Args ##########
 
 # def Args():
@@ -95,7 +95,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "polys_levit384_cb_ts_h" #########################################
+EXPERIMENT_NAME = "glas_exp" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -115,20 +115,11 @@ if not os.path.exists(LOG_PATH):
 sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 ########## Load data ##########
-train_dataset = POLYPS_dataloader("datasets/POLYPS")
-test_dataset = POLYPS_dataloader("datasets/POLYPS", is_train=False)
 
-# train_dataset = GLAS_dataloader("datasets/GLAS")
-# test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
-
-# train_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB")
-# test_dataset = CVCLINICDB_dataloader("datasets/CVCLINICDB", is_train=False)
-
-# train_dataset = ISIC2018_dataloader("datasets/ISIC2018")
-# test_dataset = ISIC2018_dataloader("datasets/ISIC2018", is_train=False)
-
-# train_dataset = RITE_dataloader("datasets/RITE")
-# test_dataset = RITE_dataloader("datasets/RITE", is_train=False)
+# train_dataset = POLYPS_dataloader("datasets/POLYPS")
+# test_dataset = POLYPS_dataloader("datasets/POLYPS", is_train=False)
+train_dataset = GLAS_dataloader("datasets/GLAS")
+test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
 
 train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
@@ -151,10 +142,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 model = Build_LeViT_UNet_384(num_classes=1, pretrained=True)
 
-
 # Send to GPU
 model = model.to(DEVICE)
-#model.apply(weight_init)
 print(model)
 
 # All parameters
@@ -167,10 +156,10 @@ print("Trainable parameters ", all_train_params)
 
 ########## Setup optimizer and loss ##########
 
-optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
+optimizer = optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5, amsgrad=True) # prev 1e-4
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # maximize mIOU score
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 criterion_mse = nn.MSELoss()
-criterion_mae = nn.L1Loss()
 
 ########## Trainer and validation functions ##########
 
@@ -200,6 +189,8 @@ def train_context_branch(model, epoch, save_masks=True):
     """
     
     print("Trains a segmentation model using context branch in a siamese style.")
+    
+    assert model is not None, f"Should be a PyTorch model, got: {model}"
     
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
@@ -332,7 +323,9 @@ for epoch in range(1, N_EPOCHS):
     #train(model, epoch)
     #train_context_branch(model, epoch)
     train_context_branch_with_task_sim(model, epoch)
-    score = test(model)
+    val_score = test(model)
+    
+    scheduler.step(val_score)
 
     if score > best_score:
         # Save predictions
