@@ -40,7 +40,7 @@ torch.cuda.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
 if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False # True
+torch.backends.cudnn.benchmark = True # True
 
     
 ########## Get Args ##########
@@ -121,7 +121,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 train_dataset = GLAS_dataloader("datasets/GLAS")
 test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
+train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -157,6 +157,7 @@ print("Trainable parameters ", all_train_params)
 ########## Setup optimizer and loss ##########
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True) # prev 1e-4
+# https://github.com/milesial/Pytorch-UNet/blob/master/train.py
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2, verbose=True)  # maximize mIOU score
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 criterion_mse = nn.MSELoss()
@@ -324,7 +325,6 @@ for epoch in range(1, N_EPOCHS):
     #train_context_branch(model, epoch)
     train_context_branch_with_task_sim(model, epoch)
     score = test(model)
-    
     scheduler.step(score)
 
     if score > best_score:

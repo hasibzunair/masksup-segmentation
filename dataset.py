@@ -186,7 +186,7 @@ class GLAS_dataloader(Dataset):
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
         self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
-        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[:1000] # For heavy masking [::-1]
+        self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking [::-1]
 
     def __len__(self):
         if self.is_train:
@@ -386,7 +386,7 @@ class RITE_dataloader(Dataset):
     
 class POLYPS_dataloader(Dataset):
     """
-    GLAS data loader with Irregular Masks Dataset (https://arxiv.org/abs/1804.07723)
+    POLYPS data loader with Irregular Masks Dataset (https://arxiv.org/abs/1804.07723)
     """
     def __init__(self, data_folder, is_train=True):
         self.is_train = is_train
