@@ -114,14 +114,15 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 if "glas" in EXPERIMENT_NAME:
     print("Loading GLAS dataset")
-    train_dataset = POLYPS_dataloader("datasets/POLYPS")
-    test_dataset = POLYPS_dataloader("datasets/POLYPS", is_train=False)
-else:
-    print("Loading POLYP dataset")
     train_dataset = GLAS_dataloader("datasets/GLAS")
     test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
+else:
+    print("Loading POLYP dataset")
+    train_dataset = POLYPS_dataloader("datasets/POLYPS")
+    test_dataset = POLYPS_dataloader("datasets/POLYPS", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
+
+train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -157,8 +158,13 @@ print("Trainable parameters ", all_train_params)
 ########## Setup optimizer and loss ##########
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True) # prev 1e-4
+
 # https://github.com/milesial/Pytorch-UNet/blob/master/train.py
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=8, verbose=True)  # maximize mIOU score
+#scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=8, verbose=True)  # maximize mIOU score
+
+amp = True
+grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
+
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 criterion_mse = nn.MSELoss()
 
@@ -251,14 +257,15 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
             #masked_img[masked_img==127] = 0
             cv2.imwrite("{}/samples/masked_imgs_cb_ts/ep{}_b{}.png".format(LOG_PATH, epoch, batch_idx), masked_img)
         
-        # Make predictions
-        output1 = model.forward(data1.float())
-        output2 = model.forward(data2.float())
+        with torch.cuda.amp.autocast(enabled=amp):
+            # Make predictions
+            output1 = model.forward(data1.float())
+            output2 = model.forward(data2.float())
 
-        # Compute loss based on two outputs, and maximize similarity
-        loss1 = criterion(output1.float(), target.float())
-        loss2 = criterion(output2.float(), target.float())
-        loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
+            # Compute loss based on two outputs, and maximize similarity
+            loss1 = criterion(output1.float(), target.float())
+            loss2 = criterion(output2.float(), target.float())
+            loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
         alpha = 1
@@ -269,9 +276,13 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
         
         # Update
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        #optimizer.zero_grad()
+        #loss.backward()
+        #optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        grad_scaler.scale(loss).backward()
+        grad_scaler.step(optimizer)
+        grad_scaler.update()
         
     print("With CB + TS: ", alpha, beta, gamma)
         
@@ -325,7 +336,7 @@ for epoch in range(1, N_EPOCHS):
     #train_context_branch(model, epoch)
     train_context_branch_with_task_sim(model, epoch)
     score = test(model)
-    scheduler.step(score)
+    #scheduler.step(score)
 
     if score > best_score:
         # Save predictions

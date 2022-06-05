@@ -19,18 +19,17 @@ from torch import Tensor
 
 from helpers import Logger
 from dataset import NYUDV2_dataloader
-from metrics import iou_score, dice_coef, calculate_metric_percase
-from losses import DiceLoss
+from metrics import calculate_metric_percase
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
-from models.kiunet import unet
+from models.unet import build_unet
 from models.resnet import rf_lw50, rf_lw101, rf_lw152
 
 """Training script"""
 
 ########## Reproducibility ##########
-# https://sajjjadayobi.github.io/blog/tips/2021/02/24/reproducibility.html
+
 SEED = 0
 random.seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
@@ -96,7 +95,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_rflw50_cb_ts_h"
+EXPERIMENT_NAME = "nyu_unet_cb_h"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -119,7 +118,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 train_dataset = NYUDV2_dataloader("datasets/NYUDV2")
 test_dataset = NYUDV2_dataloader("datasets/NYUDV2", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=8) # 8
+train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -134,11 +133,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-#model = unet()
+model = build_unet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
-model = rf_lw50(40, imagenet=True)
+#model = rf_lw50(40, imagenet=True)
 #model = rf_lw101(40, imagenet=True)
 #model = rf_lw152(40, imagenet=True)
 
@@ -157,9 +156,6 @@ print("Trainable parameters ", all_train_params)
 ########## Setup optimizer and loss ##########
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
-# 1e-4, nyu lw50
-# 
-
 criterion_mse = nn.MSELoss()
 
 def cross_entropy2d(input, target, weight=None, reduction="mean"):
@@ -367,8 +363,8 @@ for epoch in range(1, N_EPOCHS):
     
     # Trainer type #########################################
     #train(model, epoch)
-    #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    train_context_branch(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:
