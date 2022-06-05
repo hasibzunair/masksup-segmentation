@@ -91,7 +91,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "polyp_exp" #########################################
+EXPERIMENT_NAME = "glas_exp" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -112,12 +112,16 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 
 ########## Load data ##########
 
-# train_dataset = POLYPS_dataloader("datasets/POLYPS")
-# test_dataset = POLYPS_dataloader("datasets/POLYPS", is_train=False)
-train_dataset = GLAS_dataloader("datasets/GLAS")
-test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
+if "glas" in EXPERIMENT_NAME:
+    print("Loading GLAS dataset")
+    train_dataset = POLYPS_dataloader("datasets/POLYPS")
+    test_dataset = POLYPS_dataloader("datasets/POLYPS", is_train=False)
+else:
+    print("Loading POLYP dataset")
+    train_dataset = GLAS_dataloader("datasets/GLAS")
+    test_dataset = GLAS_dataloader("datasets/GLAS", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8) # 8
+train_dataloader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8) # 8
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -154,7 +158,7 @@ print("Trainable parameters ", all_train_params)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True) # prev 1e-4
 # https://github.com/milesial/Pytorch-UNet/blob/master/train.py
-#$scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2, verbose=True)  # maximize mIOU score
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=8, verbose=True)  # maximize mIOU score
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 criterion_mse = nn.MSELoss()
 
@@ -287,8 +291,6 @@ def test(model):
             dc, jc, _ = calculate_metric_percase(output, target)
             jaccard += jc
             dice += dc
-            #jaccard += iou_score(output, target)
-            #dice += dice_coef(output, target)
         test_loss /= len(test_dataloader)
         jaccard /= len(test_dataloader)
         dice /= len(test_dataloader)
@@ -323,7 +325,7 @@ for epoch in range(1, N_EPOCHS):
     #train_context_branch(model, epoch)
     train_context_branch_with_task_sim(model, epoch)
     score = test(model)
-    #scheduler.step(score)
+    scheduler.step(score)
 
     if score > best_score:
         # Save predictions
