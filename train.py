@@ -19,13 +19,10 @@ from torch import Tensor
 from helpers import Logger
 from dataset import GLAS_dataloader, POLYPS_dataloader
 from metrics import calculate_metric_percase
-from losses import DiceLoss
 from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
-from models.unetplusplus import NestedUNet
 from models.kiunet import unet
-from models.resunet import ResUnet
 
 """Training script"""
 
@@ -40,8 +37,7 @@ torch.cuda.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
 if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = True # True
-
+torch.backends.cudnn.benchmark = True
     
 ########## Get Args ##########
 
@@ -95,7 +91,7 @@ print(DEVICE)
 
 # Log folder
 #EXPERIMENT_NAME = args.exp_name+"_"+"a"+str(args.alpha)+"b"+str(args.beta)+"g"+str(args.gamma)+"_"+args.dataset #"levit192_isic2018"
-EXPERIMENT_NAME = "glas_exp" #########################################
+EXPERIMENT_NAME = "glas_exp_" #########################################
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -158,7 +154,7 @@ print("Trainable parameters ", all_train_params)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True) # prev 1e-4
 # https://github.com/milesial/Pytorch-UNet/blob/master/train.py
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2, verbose=True)  # maximize mIOU score
+#$scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2, verbose=True)  # maximize mIOU score
 criterion = nn.BCEWithLogitsLoss() # loss combines a Sigmoid layer and the BCELoss in one single class
 criterion_mse = nn.MSELoss()
 
@@ -169,6 +165,8 @@ def train(model, epoch):
     Trains a segmentation model.
     """
     print("Trains a segmentation model.")
+    
+    assert model is not None, f"Should be a PyTorch model, got: {model}"
     
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
@@ -325,7 +323,7 @@ for epoch in range(1, N_EPOCHS):
     #train_context_branch(model, epoch)
     train_context_branch_with_task_sim(model, epoch)
     score = test(model)
-    scheduler.step(score)
+    #scheduler.step(score)
 
     if score > best_score:
         # Save predictions
