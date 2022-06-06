@@ -95,7 +95,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_unet_cb_h"
+EXPERIMENT_NAME = "nyu_rflw152_cb_ts_h"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -133,13 +133,13 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-model = build_unet()
+#model = build_unet()
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
 #model = rf_lw50(40, imagenet=True)
 #model = rf_lw101(40, imagenet=True)
-#model = rf_lw152(40, imagenet=True)
+model = rf_lw152(40, imagenet=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -363,8 +363,8 @@ for epoch in range(1, N_EPOCHS):
     
     # Trainer type #########################################
     #train(model, epoch)
-    train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
 
     if score > best_score:
