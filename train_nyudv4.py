@@ -24,6 +24,7 @@ from models.LeViTUNet128s import Build_LeViT_UNet_128s
 from models.LeViTUNet192 import Build_LeViT_UNet_192
 from models.LeViTUNet384 import Build_LeViT_UNet_384
 from models.unet import build_unet
+from models.unetplusplus import NestedUNet
 from models.resnet import rf_lw50, rf_lw101, rf_lw152
 
 """Training script"""
@@ -95,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_rflw152_cb_ts_h"
+EXPERIMENT_NAME = "nyu_unet_cb_h"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -118,7 +119,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 train_dataset = NYUDV2_dataloader("datasets/NYUDV2")
 test_dataset = NYUDV2_dataloader("datasets/NYUDV2", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
+train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -133,13 +134,15 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 ########## Get model ##########
 
 # Define model
-#model = build_unet()
+model = None
+model = build_unet()
+#model = NestedUNet(num_classes=40)
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
 #model = rf_lw50(40, imagenet=True)
 #model = rf_lw101(40, imagenet=True)
-model = rf_lw152(40, imagenet=True)
+#model = rf_lw152(40, imagenet=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -155,8 +158,13 @@ print("Trainable parameters ", all_train_params)
 
 ########## Setup optimizer and loss ##########
 
-optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
+#optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
+optimizer = optim.SGD(model. parameters(),lr=0.01, momentum=0.9, weight_decay=0.0005)
+# multiply learning rate by 0.1 after 30% of epochs
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.3*200), gamma=0.1, verbose=True)
+
 criterion_mse = nn.MSELoss()
+criterion = nn.CrossEntropyLoss()
 
 def cross_entropy2d(input, target, weight=None, reduction="mean"):
     """
@@ -197,6 +205,8 @@ def train(model, epoch):
     """
     print("Trains a segmentation model.")
     
+    train_loss = 0
+    
     model.train()
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
@@ -205,12 +215,18 @@ def train(model, epoch):
         output1 = model.forward(data1.float())
         
         # Compute loss
-        loss = cross_entropy2d(output1, target.long())
+        loss = criterion(output1, target.long())
+        train_loss += loss.item()
         
         # Update
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+    
+    train_loss /= len(train_dataloader)
+    train_losses.append(train_loss)
+    print('Average Training Loss: {:.3f}'.format(train_loss))
+        
 
 
 def train_context_branch(model, epoch, save_masks=True):
@@ -221,6 +237,9 @@ def train_context_branch(model, epoch, save_masks=True):
     print("Trains a segmentation model using context branch in a siamese style.")
     
     model.train()
+    
+    train_loss = 0
+    
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
         
@@ -253,6 +272,9 @@ def train_context_branch(model, epoch, save_masks=True):
         loss.backward()
         optimizer.step()
         
+    train_loss /= len(train_dataloader)
+    train_losses.append(train_loss)
+    print('Average Training Loss: {:.3f}'.format(train_loss))
     print("With CB: ", alpha, beta)
 
 
@@ -264,6 +286,9 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
     print("Trains a segmentation model using context branch (CB) and task similarity (TS) constraint.")
     
     model.train()
+    
+    train_loss = 0
+    
     for batch_idx, data in enumerate(train_dataloader):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
         
@@ -287,7 +312,6 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         output1 = pred_mask(output1, target)
         output2 = pred_mask(output2, target)
         
-        #import ipdb; ipdb.set_trace()
         # Without pred_mask function
         #loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float())) # 45.492
         
@@ -307,7 +331,10 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
+    
+    train_loss /= len(train_dataloader)
+    train_losses.append(train_loss)
+    print('Average Training Loss: {:.3f}'.format(train_loss))
     print("With CB + TS: ", alpha, beta, gamma)
         
             
@@ -321,18 +348,21 @@ def test(model):
         for data in test_dataloader:
             data, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(data.float())
-            test_loss += cross_entropy2d(output.float(), target.long()).item()
+            test_loss += criterion(output.float(), target.long()).item()
             
-            output = (
-                cv2.resize(
-                    output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
-                    target.size()[1:][::-1],
-                    interpolation=cv2.INTER_CUBIC,
-                )
-                .argmax(axis=2)
-                .astype(np.uint8)
-            )
-            jc = jaccard_score(target.data.cpu().numpy().flatten(), output.flatten(), average='micro') 
+            # output = (
+            #     cv2.resize(
+            #         output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
+            #         target.size()[1:][::-1],
+            #         interpolation=cv2.INTER_CUBIC,
+            #     )
+            #     .argmax(axis=2)
+            #     .astype(np.uint8)
+            # )
+            
+            output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
+            
+            jc = jaccard_score(target.squeeze().data.cpu().numpy().flatten(), output.flatten(), average='micro') 
             jaccard += jc
 
         test_loss /= len(test_dataloader)
@@ -347,8 +377,9 @@ def test(model):
         print('==========================================')
         return jaccard
 
-########## Train and validate ##########
 
+########## Train and validate ##########
+train_losses = []
 losses = []
 jacs = []
 dices = []
@@ -363,9 +394,10 @@ for epoch in range(1, N_EPOCHS):
     
     # Trainer type #########################################
     #train(model, epoch)
-    #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    train_context_branch(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
+    scheduler.step()
 
     if score > best_score:
         # Save predictions
@@ -381,21 +413,23 @@ for epoch in range(1, N_EPOCHS):
         
             img = (img[0].permute(1,2,0).detach().cpu().numpy()+1)/2
             img = (img*255).astype(np.uint8)
-            img=cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+            img= cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
             
             gt = target.squeeze().data.cpu().numpy()
             gt = cmap[gt]
 
-            pred = (
-                cv2.resize(
-                    output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
-                    target.size()[1:][::-1],
-                    interpolation=cv2.INTER_CUBIC,
-                )
-                .argmax(axis=2)
-                .astype(np.uint8)
-            )
-            pred = cmap[pred]
+            # pred = (
+            #     cv2.resize(
+            #         output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
+            #         target.size()[1:][::-1],
+            #         interpolation=cv2.INTER_CUBIC,
+            #     )
+            #     .argmax(axis=2)
+            #     .astype(np.uint8)
+            # )
+            
+            output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
+            pred = cmap[output]
             
             cv2.imwrite(os.path.join(LOG_PATH, "vis", "imgs/")+str(batch_idx)+'.png', img)
             cv2.imwrite(os.path.join(LOG_PATH, "vis", "gts/")+str(batch_idx)+'.png', gt)
@@ -417,6 +451,8 @@ print("Max Jaccard/IoU ", max(jacs))
 # Save losses
 losses = np.array(losses)
 np.savetxt("{}/{}_loss.txt".format(LOG_PATH, EXPERIMENT_NAME), losses, delimiter=",")
+train_losses = np.array(train_losses)
+np.savetxt("{}/{}_train_loss.txt".format(LOG_PATH, EXPERIMENT_NAME), train_losses, delimiter=",")
 jacs = np.array(jacs)
 np.savetxt("{}/{}_jacs.txt".format(LOG_PATH, EXPERIMENT_NAME), jacs, delimiter=",")
 
@@ -438,11 +474,12 @@ f.close()
 # b, g, r, y, o, -g, -m,
 plt.figure(figsize=(15, 5))
 plt.subplot(121)
+plt.plot(train_losses,linewidth=4)
 plt.plot(losses,linewidth=4)
 plt.title('{} loss'.format("Exp name"))
 #plt.ylabel('Loss')
 plt.xlabel('Epoch')
-plt.legend(['loss'], loc='upper left')
+plt.legend(['train_loss','loss'], loc='upper left')
 plt.grid(True)
 # Plot training & validation iou_score values
 plt.subplot(122)
