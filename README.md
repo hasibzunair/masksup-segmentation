@@ -27,6 +27,8 @@ TODO
 TODO
 
 ### Acknowledgements
-See https://github.com/hasibzunair/learn-pytorch/tree/master/notebooks/examples/image_segmentation. LeViT-UNet models are from https://github.com/apple1986/LeViT-UNet.
+* https://github.com/apple1986/LeViT-UNet
+* https://github.com/France1/unet-multiclass-pytorch
+* https://github.com/milesial/Pytorch-UNet
 
 
