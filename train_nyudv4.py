@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_unet_cb_h"
+EXPERIMENT_NAME = "nyu_unet_cb_ts_h"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -119,7 +119,7 @@ sys.stdout = Logger(os.path.join(LOG_PATH, 'log_train.txt'))
 train_dataset = NYUDV2_dataloader("datasets/NYUDV2")
 test_dataset = NYUDV2_dataloader("datasets/NYUDV2", is_train=False)
 
-train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=8)
+train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
 
 print("Training on {} batches/samples".format(len(train_dataloader)))
@@ -184,18 +184,6 @@ def cross_entropy2d(input, target, weight=None, reduction="mean"):
     )
     return loss
 
-def pred_mask(input, target):
-    """
-    Conv script
-    """
-    n, c, h, w = input.size()
-    nt, ht, wt = target.size()
-    # Handle inconsistent size between input and target
-    if h != ht and w != wt:  # upsample labels
-        input = F.interpolate(input, size=(ht, wt), mode="bilinear", align_corners=True)
-    input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
-    return input
-
 
 ########## Trainer and validation functions ##########
 
@@ -257,8 +245,8 @@ def train_context_branch(model, epoch, save_masks=True):
         output2 = model.forward(data2.float())
         
         # Compute loss based on two outputs
-        loss1 = cross_entropy2d(output1.float(), target.long())
-        loss2 = cross_entropy2d(output2.float(), target.long())
+        loss1 = criterion(output1.float(), target.long())
+        loss2 = criterion(output2.float(), target.long())
         
         # Loss coefficients
         alpha = 1
@@ -266,6 +254,7 @@ def train_context_branch(model, epoch, save_masks=True):
         
         # Total loss
         loss = alpha * loss1 + beta * loss2
+        train_loss += loss.item()
         
         # Update
         optimizer.zero_grad()
@@ -306,18 +295,13 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         output2 = model.forward(data2.float())
 
         # Compute loss based on two outputs, and maximize similarity
-        loss1 = cross_entropy2d(output1.float(), target.long())
-        loss2 = cross_entropy2d(output2.float(), target.long())
+        loss1 = criterion(output1.float(), target.long())
+        loss2 = criterion(output2.float(), target.long())
         
-        output1 = pred_mask(output1, target)
-        output2 = pred_mask(output2, target)
-        
-        # Without pred_mask function
-        #loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float())) # 45.492
+        output1 = torch.softmax(output1, dim=1).argmax(dim=1)
+        output2 = torch.softmax(output2, dim=1).argmax(dim=1)
         
         loss3 = criterion_mse(output1.float(), output2.float())
-        # Try
-        #loss3 = criterion_mse(torch.sigmoid(output1.float()), torch.sigmoid(output2.float()))
         
         # Loss coefficients
         alpha = 1
@@ -326,6 +310,7 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         
         # Total loss
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
+        train_loss += loss.item()
         
         # Update
         optimizer.zero_grad()
@@ -394,8 +379,8 @@ for epoch in range(1, N_EPOCHS):
     
     # Trainer type #########################################
     #train(model, epoch)
-    train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     scheduler.step()
 
