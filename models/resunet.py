@@ -40,7 +40,7 @@ class Upsample(nn.Module):
     
 
 class ResUnet(nn.Module):
-    def __init__(self, channel=3, filters=[64, 128, 256, 512]):
+    def __init__(self, num_classes=1, channel=3, filters=[64, 128, 256, 512]):
         super(ResUnet, self).__init__()
 
         self.input_layer = nn.Sequential(
@@ -68,7 +68,7 @@ class ResUnet(nn.Module):
         self.up_residual_conv3 = ResidualConv(filters[1] + filters[0], filters[0], 1, 1)
 
         self.output_layer = nn.Sequential(
-            nn.Conv2d(filters[0], 1, 1, 1),
+            nn.Conv2d(filters[0], num_classes, 1, 1),
         )
 
     def forward(self, x):

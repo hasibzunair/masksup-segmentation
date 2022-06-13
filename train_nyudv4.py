@@ -26,7 +26,7 @@ from models.LeViTUNet384 import Build_LeViT_UNet_384
 from models.unet import build_unet
 from models.unetplusplus import NestedUNet
 from models.resnet import rf_lw50, rf_lw101, rf_lw152
-
+from models.resunet import ResUnet
 """Training script"""
 
 ########## Reproducibility ##########
@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_unet_cb_ts_h"
+EXPERIMENT_NAME = "nyu_levit384"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -135,11 +135,11 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 
 # Define model
 model = None
-model = build_unet()
+#model = build_unet()
 #model = NestedUNet(num_classes=40)
 #model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
 #model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
+model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
 #model = rf_lw50(40, imagenet=True)
 #model = rf_lw101(40, imagenet=True)
 #model = rf_lw152(40, imagenet=True)
@@ -300,7 +300,6 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         
         output1 = torch.softmax(output1, dim=1).argmax(dim=1)
         output2 = torch.softmax(output2, dim=1).argmax(dim=1)
-        
         loss3 = criterion_mse(output1.float(), output2.float())
         
         # Loss coefficients
@@ -378,9 +377,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type #########################################
-    #train(model, epoch)
+    train(model, epoch)
     #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     scheduler.step()
 

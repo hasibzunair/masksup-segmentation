@@ -155,13 +155,9 @@ print("All parameters ", all_params)
 all_train_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("Trainable parameters ", all_train_params)
 
-########## Setup optimizer and loss ##########
+########## Setup optimizer and loss and loss scaling for AMP ##########
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True) # prev 1e-4
-
-# https://github.com/milesial/Pytorch-UNet/blob/master/train.py
-#scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=8, verbose=True)  # maximize mIOU score
-
 amp = True
 grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
 
@@ -276,9 +272,6 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         loss = alpha * loss1 + beta * loss2 + gamma * loss3
         
         # Update
-        #optimizer.zero_grad()
-        #loss.backward()
-        #optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         grad_scaler.scale(loss).backward()
         grad_scaler.step(optimizer)
