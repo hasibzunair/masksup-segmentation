@@ -329,7 +329,6 @@ for epoch in range(1, N_EPOCHS):
     #train_context_branch(model, epoch)
     train_context_branch_with_task_sim(model, epoch)
     score = test(model)
-    #scheduler.step(score)
 
     if score > best_score:
         # Save predictions
