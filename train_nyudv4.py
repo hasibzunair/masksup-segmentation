@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_levit384"
+EXPERIMENT_NAME = "nyu_exp"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -136,13 +136,7 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 # Define model
 model = None
 #model = build_unet()
-#model = NestedUNet(num_classes=40)
-#model = Build_LeViT_UNet_128s(num_classes=1, pretrained=True)
-#model = Build_LeViT_UNet_192(num_classes=1, pretrained=True)
-model = Build_LeViT_UNet_384(num_classes=40, pretrained=True)
-#model = rf_lw50(40, imagenet=True)
-#model = rf_lw101(40, imagenet=True)
-#model = rf_lw152(40, imagenet=True)
+model = NestedUNet(num_classes=40)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -157,33 +151,11 @@ all_train_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("Trainable parameters ", all_train_params)
 
 ########## Setup optimizer and loss ##########
-
-#optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5, amsgrad=True)
 optimizer = optim.SGD(model. parameters(),lr=0.01, momentum=0.9, weight_decay=0.0005)
-# multiply learning rate by 0.1 after 30% of epochs
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.3*200), gamma=0.1, verbose=True)
 
 criterion_mse = nn.MSELoss()
 criterion = nn.CrossEntropyLoss()
-
-def cross_entropy2d(input, target, weight=None, reduction="mean"):
-    """
-    Taken from # https://github.com/shashankag14/Cityscapes-Segmentation/blob/master/Cityscapes-R2UNET.ipynb
-    """
-    n, c, h, w = input.size()
-    nt, ht, wt = target.size()
-
-    # Handle inconsistent size between input and target
-    if h != ht and w != wt:  # upsample labels
-        input = F.interpolate(input, size=(ht, wt), mode="bilinear", align_corners=True)
-
-    input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
-    target = target.view(-1)
-    loss = F.cross_entropy(
-        input, target, weight=weight, reduction=reduction, ignore_index=255
-    )
-    return loss
-
 
 ########## Trainer and validation functions ##########
 
@@ -377,9 +349,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type #########################################
-    train(model, epoch)
+    #train(model, epoch)
     #train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     scheduler.step()
 
