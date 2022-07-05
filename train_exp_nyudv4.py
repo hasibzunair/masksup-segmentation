@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_exp"
+EXPERIMENT_NAME = "nyu_lw152"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -136,7 +136,8 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 # Define model
 model = None
 #model = build_unet()
-model = NestedUNet(num_classes=40)
+#model = NestedUNet(num_classes=40)
+model = rf_lw152(40, imagenet=True)
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -157,6 +158,40 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.3*200), gamma=0
 criterion_mse = nn.MSELoss()
 criterion = nn.CrossEntropyLoss()
 
+###########
+def cross_entropy2d(input, target, weight=None, reduction="mean"):
+    """
+    Taken from # https://github.com/shashankag14/Cityscapes-Segmentation/blob/master/Cityscapes-R2UNET.ipynb
+    """
+    n, c, h, w = input.size()
+    nt, ht, wt = target.size()
+
+    # Handle inconsistent size between input and target
+    if h != ht and w != wt:  # upsample labels
+        input = F.interpolate(input, size=(ht, wt), mode="bilinear", align_corners=True)
+
+    input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
+    target = target.view(-1)
+    loss = F.cross_entropy(
+        input, target, weight=weight, reduction=reduction, ignore_index=255
+    )
+    return loss
+
+def pred_mask(input, target):
+    """
+    Conv script
+    """
+    n, c, h, w = input.size()
+    nt, ht, wt = target.size()
+    # Handle inconsistent size between input and target
+    if h != ht and w != wt:  # upsample labels
+        input = F.interpolate(input, size=(ht, wt), mode="bilinear", align_corners=True)
+    input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
+    return input
+###########
+
+
+
 ########## Trainer and validation functions ##########
 
 def train(model, epoch):
@@ -173,6 +208,21 @@ def train(model, epoch):
         
         # Make prediction
         output1 = model.forward(data1.float())
+        
+        #############
+        output1 = (
+            cv2.resize(
+                output1[0, :40].data.cpu().numpy().transpose(1, 2, 0),
+                target.size()[1:][::-1],
+                interpolation=cv2.INTER_CUBIC,
+            )
+            .argmax(axis=2)
+            .astype(np.uint8)
+        )
+
+        output1 = torch.softmax(output1, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
+        #############
+        
         
         # Compute loss
         loss = criterion(output1, target.long())
@@ -349,9 +399,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type #########################################
-    #train(model, epoch)
+    train(model, epoch)
     #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     scheduler.step()
 

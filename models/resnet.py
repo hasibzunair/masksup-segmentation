@@ -259,7 +259,7 @@ def rf_lw101(num_classes, imagenet=False, pretrained=True, **kwargs):
     return model
 
 
-def rf_lw152(num_classes, imagenet=False, pretrained=True, **kwargs):
+def rf_lw152(num_classes, imagenet=False, pretrained=True, **kwargs): # pretrained=True
     model = ResNetLW(Bottleneck, [3, 8, 36, 3], num_classes=num_classes, **kwargs)
     if imagenet:
         key = "152_imagenet"
@@ -270,6 +270,7 @@ def rf_lw152(num_classes, imagenet=False, pretrained=True, **kwargs):
         if dataset:
             bname = "152_" + dataset.lower()
             key = "rf_lw" + bname
+            print("--------------------------", bname)
             url = models_urls[bname]
             model.load_state_dict(maybe_download(key, url), strict=False)
     return model
