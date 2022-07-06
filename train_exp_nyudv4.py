@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_lw152"
+EXPERIMENT_NAME = "nyu_lw152_cb_ts_h"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -302,12 +302,12 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         output2 = model.forward(data2.float())
 
         # Compute loss based on two outputs, and maximize similarity
-        loss1 = criterion(output1.float(), target.long())
-        loss2 = criterion(output2.float(), target.long())
+        loss1 = cross_entropy2d(output1.float(), target.long())
+        loss2 = cross_entropy2d(output2.float(), target.long())
         
         # Convert to actual size
-        output1 = pred_mask(output1, target)
-        output2 = pred_mask(output2, target)
+        #output1 = pred_mask(output1, target)
+        #output2 = pred_mask(output2, target)
         
         loss3 = criterion_mse(output1.float(), output2.float())
         
@@ -385,9 +385,9 @@ for epoch in range(1, N_EPOCHS):
     print("Epoch: {}".format(epoch))
     
     # Trainer type #########################################
-    train(model, epoch)
+    #train(model, epoch)
     #train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     scheduler.step()
 
