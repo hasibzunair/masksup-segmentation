@@ -305,17 +305,6 @@ def test(model):
             data, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(data.float())
             test_loss += criterion(output.float(), target.long()).item()
-            
-            # output = (
-            #     cv2.resize(
-            #         output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
-            #         target.size()[1:][::-1],
-            #         interpolation=cv2.INTER_CUBIC,
-            #     )
-            #     .argmax(axis=2)
-            #     .astype(np.uint8)
-            # )
-            
             output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
             
             jc = jaccard_score(target.squeeze().data.cpu().numpy().flatten(), output.flatten(), average='micro') 
@@ -372,18 +361,7 @@ for epoch in range(1, N_EPOCHS):
             img= cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
             
             gt = target.squeeze().data.cpu().numpy()
-            gt = cmap[gt]
-
-            # pred = (
-            #     cv2.resize(
-            #         output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
-            #         target.size()[1:][::-1],
-            #         interpolation=cv2.INTER_CUBIC,
-            #     )
-            #     .argmax(axis=2)
-            #     .astype(np.uint8)
-            # )
-            
+            gt = cmap[gt]            
             output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
             pred = cmap[output]
             
