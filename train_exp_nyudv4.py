@@ -207,25 +207,11 @@ def train(model, epoch):
         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
         
         # Make prediction
-        output1 = model.forward(data1.float())
-        
-        #############
-        output1 = (
-            cv2.resize(
-                output1[0, :40].data.cpu().numpy().transpose(1, 2, 0),
-                target.size()[1:][::-1],
-                interpolation=cv2.INTER_CUBIC,
-            )
-            .argmax(axis=2)
-            .astype(np.uint8)
-        )
-
-        output1 = torch.softmax(output1, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
-        #############
-        
+        output1 = model.forward(data1.float())        
         
         # Compute loss
-        loss = criterion(output1, target.long())
+        #output1 = F.softmax(output1, dim=1)
+        loss = cross_entropy2d(output1, target.long())
         train_loss += loss.item()
         
         # Update
@@ -266,9 +252,12 @@ def train_context_branch(model, epoch, save_masks=True):
         output1 = model.forward(data1.float())
         output2 = model.forward(data2.float())
         
+        #output1 = F.softmax(output1, dim=1)
+        #output2 = F.softmax(output2, dim=1)
+        
         # Compute loss based on two outputs
-        loss1 = criterion(output1.float(), target.long())
-        loss2 = criterion(output2.float(), target.long())
+        loss1 = cross_entropy2d(output1.float(), target.long())
+        loss2 = cross_entropy2d(output2.float(), target.long())
         
         # Loss coefficients
         alpha = 1
@@ -315,13 +304,19 @@ def train_context_branch_with_task_sim(model, epoch, save_masks=True):
         # Make predictions
         output1 = model.forward(data1.float())
         output2 = model.forward(data2.float())
+        
+        #output1 = F.softmax(output1, dim=1)
+        #output2 = F.softmax(output2, dim=1)
 
         # Compute loss based on two outputs, and maximize similarity
         loss1 = criterion(output1.float(), target.long())
         loss2 = criterion(output2.float(), target.long())
         
-        output1 = torch.softmax(output1, dim=1).argmax(dim=1)
-        output2 = torch.softmax(output2, dim=1).argmax(dim=1)
+        # output1 = torch.softmax(output1, dim=1).argmax(dim=1)
+        # output2 = torch.softmax(output2, dim=1).argmax(dim=1)
+        output1 = pred_mask(output1, target)
+        output2 = pred_mask(output2, target)
+        
         loss3 = criterion_mse(output1.float(), output2.float())
         
         # Loss coefficients
@@ -354,19 +349,21 @@ def test(model):
         for data in test_dataloader:
             data, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(data.float())
-            test_loss += criterion(output.float(), target.long()).item()
+            #output = F.softmax(output, dim=1)
             
-            # output = (
-            #     cv2.resize(
-            #         output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
-            #         target.size()[1:][::-1],
-            #         interpolation=cv2.INTER_CUBIC,
-            #     )
-            #     .argmax(axis=2)
-            #     .astype(np.uint8)
-            # )
+            test_loss += cross_entropy2d(output.float(), target.long()).item()
             
-            output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
+            output = (
+                cv2.resize(
+                    output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
+                    target.size()[1:][::-1],
+                    interpolation=cv2.INTER_CUBIC,
+                )
+                .argmax(axis=2)
+                .astype(np.uint8)
+            )
+            
+            #output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
             
             jc = jaccard_score(target.squeeze().data.cpu().numpy().flatten(), output.flatten(), average='micro') 
             jaccard += jc
@@ -416,6 +413,7 @@ for epoch in range(1, N_EPOCHS):
         for batch_idx, data in enumerate(test_dataloader):
             img, target = data["image"].to(DEVICE), data["mask"].to(DEVICE)
             output = model(img.float())
+            #output = F.softmax(output, dim=1)
         
             img = (img[0].permute(1,2,0).detach().cpu().numpy()+1)/2
             img = (img*255).astype(np.uint8)
@@ -424,17 +422,18 @@ for epoch in range(1, N_EPOCHS):
             gt = target.squeeze().data.cpu().numpy()
             gt = cmap[gt]
 
-            # pred = (
-            #     cv2.resize(
-            #         output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
-            #         target.size()[1:][::-1],
-            #         interpolation=cv2.INTER_CUBIC,
-            #     )
-            #     .argmax(axis=2)
-            #     .astype(np.uint8)
-            # )
+            output = (
+                cv2.resize(
+                    output[0, :40].data.cpu().numpy().transpose(1, 2, 0),
+                    target.size()[1:][::-1],
+                    interpolation=cv2.INTER_CUBIC,
+                )
+                .argmax(axis=2)
+                .astype(np.uint8)
+            )
             
-            output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
+            #output = torch.softmax(output, dim=1).argmax(dim=1)[0].float().cpu().numpy().astype(np.uint8)
+            
             pred = cmap[output]
             
             cv2.imwrite(os.path.join(LOG_PATH, "vis", "imgs/")+str(batch_idx)+'.png', img)
