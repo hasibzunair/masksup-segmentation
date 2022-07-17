@@ -2,7 +2,6 @@
 
 [doc](https://docs.google.com/document/d/1CASC_KfhdAUHPPOCFJq9HmI22ZsuO1mZjldPmRvDNMM/edit?usp=sharing)
 
-
 ## 1. Specification of dependencies
 
 This code requires Python 3.8.12. Run the following to install the required packages.
