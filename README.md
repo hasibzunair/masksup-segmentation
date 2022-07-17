@@ -8,7 +8,7 @@
 This code requires Python 3.8.12. Run the following to install the required packages.
 ```
 conda create --name msl python=3.8
-pip install -r requirements.txt
+conda env create --file environment.yml
 ```
 
 ## 2a. Training code
