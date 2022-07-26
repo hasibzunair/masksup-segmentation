@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_lw152_cb_h"
+EXPERIMENT_NAME = "nyu_rflw152_cb_ts_h"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -137,7 +137,20 @@ print("Sample: ", x[0][:,:10][0][0][:3])
 model = None
 #model = build_unet()
 #model = NestedUNet(num_classes=40)
-model = rf_lw152(40, imagenet=True)
+model = rf_lw152(40, imagenet=False)
+
+# from segformer_pytorch import Segformer
+# #Ref: https://github.com/lucidrains/segformer-pytorch
+# model = Segformer(
+#     dims = (32, 64, 160, 256),      # dimensions of each stage
+#     heads = (1, 2, 5, 8),           # heads of each stage
+#     ff_expansion = (8, 8, 4, 4),    # feedforward expansion factor of each stage
+#     reduction_ratio = (8, 4, 2, 1), # reduction ratio of each stage for efficient attention
+#     num_layers = 2,                 # num layers of each stage
+#     decoder_dim = 256,              # decoder dimension
+#     num_classes = 40                 # number of segmentation classes
+# )
+
 
 # Send to GPU
 model = model.to(DEVICE)
@@ -221,6 +234,45 @@ def train(model, epoch):
     train_loss /= len(train_dataloader)
     train_losses.append(train_loss)
     print('Average Training Loss: {:.3f}'.format(train_loss))
+    
+    
+# segm_crit = nn.NLLLoss2d(ignore_index=255).cuda()
+# def train_segformer(model, epoch):
+#     """
+#     Trains a segmentation model.
+#     """
+#     print("Trains a segmentation model.")
+    
+#     train_loss = 0
+    
+#     model.train()
+#     for batch_idx, data in enumerate(train_dataloader):
+#         data1, data2, target = data["image"].to(DEVICE), data["partial_image1"].to(DEVICE), data["mask"].to(DEVICE)
+        
+#         # Make prediction
+#         #output1 = model.forward(data1.float())  
+        
+#         output1 = model(data1.float())
+#         output1 = nn.functional.interpolate(
+#             output1, size=target.size()[1:], mode="bilinear", align_corners=False
+#         )
+#         soft_output = nn.LogSoftmax()(output1)
+        
+#         # Compute loss
+#         #loss = cross_entropy2d(output1, target.long())
+#         #train_loss += loss.item()
+#         loss = segm_crit(soft_output, target.long())
+#         train_loss += loss.item()
+        
+#         # Update
+#         optimizer.zero_grad()
+#         loss.backward()
+#         optimizer.step()
+    
+#     train_loss /= len(train_dataloader)
+#     train_losses.append(train_loss)
+#     print('Average Training Loss: {:.3f}'.format(train_loss))
+
         
 
 
@@ -369,7 +421,6 @@ def test(model):
         print('==========================================')
         return jaccard
 
-
 ########## Train and validate ##########
 train_losses = []
 losses = []
@@ -379,15 +430,15 @@ score = 0
 best_score = 0
 
 start_time = time.time()
-N_EPOCHS = 200
+N_EPOCHS = 300
 for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
     
     # Trainer type #########################################
     #train(model, epoch)
-    train_context_branch(model, epoch)
-    #train_context_branch_with_task_sim(model, epoch)
+    #train_context_branch(model, epoch)
+    train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     scheduler.step()
 
