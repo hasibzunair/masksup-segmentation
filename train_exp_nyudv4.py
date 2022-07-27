@@ -96,7 +96,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # Log folder
-EXPERIMENT_NAME = "nyu_rflw152_cb_ts_h"
+EXPERIMENT_NAME = "nyu_rflw152_cb_h"
 
 ROOT_DIR = os.path.abspath(".")
 LOG_PATH = os.path.join(ROOT_DIR, "logs", EXPERIMENT_NAME)
@@ -437,8 +437,8 @@ for epoch in range(1, N_EPOCHS):
     
     # Trainer type #########################################
     #train(model, epoch)
-    #train_context_branch(model, epoch)
-    train_context_branch_with_task_sim(model, epoch)
+    train_context_branch(model, epoch)
+    #train_context_branch_with_task_sim(model, epoch)
     score = test(model)
     scheduler.step()
 
