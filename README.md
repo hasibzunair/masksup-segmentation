@@ -24,12 +24,12 @@ First, open a folder named
 ## 2b. Train & Evaluation code
 To train and evaluate MaskSup on GLaS or Kvasir & CVC-ClinicDB datasets, run:
 
-```bash
+```
 python trainval_glas_polyp.py
 ```
 To train and evaluate MaskSup on NYUDv2 dataset, run:
 
-```bash
+```
 python trainval_nyudv2.py
 ```
 
