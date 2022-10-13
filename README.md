@@ -22,15 +22,11 @@ First, open a folder named
 
 
 ## 2b. Train & Evaluation code
-To train and evaluate MaskSup on GLaS or Kvasir & CVC-ClinicDB datasets, you need to change the `EXPERIMENT_NAME` in `trainval_glas_polyp.py` to a name that has glas or polyp. For example to train on GLaS, set `EXPERIMENT_NAME = "glas_masksup"`.
-
-run:
-
+To train and evaluate MaskSup on GLaS or Kvasir & CVC-ClinicDB datasets, you need to change the `EXPERIMENT_NAME` in `trainval_glas_polyp.py` to a name that has glas or polyp. For example to train on GLaS, set `EXPERIMENT_NAME = "glas_masksup"`. Then run:
 ```
 python trainval_glas_polyp.py
 ```
 To train and evaluate MaskSup on NYUDv2 dataset, run:
-
 ```
 python trainval_nyudv2.py
 ```
