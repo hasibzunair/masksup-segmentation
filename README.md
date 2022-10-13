@@ -46,10 +46,18 @@ We provide pretrained models on [GitHub Releases](https://github.com/hasibzunair
 
 
 ## 4. Demo
-TODO
+Coming soon!
 
 ## 5. Citation
-TODO
+
+```bibtex
+@article{zunair2022masked,
+  title={Masked Supervised Learning for Semantic Segmentation},
+  author={Zunair, Hasib and Hamza, A Ben},
+  journal={arXiv preprint arXiv:2210.00923},
+  year={2022}
+}
+```
 
 ### Acknowledgements
 * https://github.com/apple1986/LeViT-UNet
