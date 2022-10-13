@@ -35,7 +35,7 @@ class NYUDV2_dataloader(Dataset):
             self.test_images = sorted(glob.glob(self._input_folder + "/*.png"))
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
-        self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
+        self._scribbles_folder = './datasets/SCRIBBLES'
         self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking [::-1]
 
     def __len__(self):
@@ -105,7 +105,7 @@ class GLAS_dataloader(Dataset):
             self.test_images = sorted(glob.glob(self._input_folder + "/*.png"))
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
-        self._scribbles_folder = os.path.join(self._data_folder, 'SCRIBBLES')
+        self._scribbles_folder = './datasets/SCRIBBLES'
         self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking [::-1]
 
     def __len__(self):
@@ -180,7 +180,7 @@ class POLYPS_dataloader(Dataset):
             self.test_images = sorted(glob.glob(self._input_folder + "/*.png"))
             self.test_labels = sorted(glob.glob(self._label_folder + "/*.png"))
         
-        self._scribbles_folder = os.path.join(self._data_folder, "TrainDataset", 'SCRIBBLES')
+        self._scribbles_folder = './datasets/SCRIBBLES'
         self._scribbles = sorted(glob.glob(self._scribbles_folder + "/*.png"))[::-1][:1000] # For heavy masking [::-1]
 
     def __len__(self):
