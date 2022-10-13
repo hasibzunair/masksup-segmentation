@@ -18,7 +18,7 @@ conda activate msl
 ## 2a. Get datasets
 
 First, open a folder named 
-`datasets` in the root folder. Then, download GLaS, Kvasir & CVC-ClinicDB and NYUDv2 datasets as well as the sribbles from [GitHub Releases](https://github.com/hasibzunair/masksup-segmentation/releases/tag/v1.0).
+`datasets` in the root folder (`mkdir datasets`). Then, download GLaS, Kvasir & CVC-ClinicDB and NYUDv2 datasets as well as the sribbles from [GitHub Releases](https://github.com/hasibzunair/masksup-segmentation/releases/tag/v1.0). Finally, unzip and move the four folder to `datasets`.
 
 
 ## 2b. Train & Evaluation code
