@@ -15,11 +15,24 @@ conda env create -f environment.yml
 conda activate msl 
 ```
 
-## 2a. Training code
-Data detail goes here. TODO
+## 2a. Get datasets
 
-## 2b. Evaluation code
-TODO
+First, open a folder named 
+`datasets` in the root folder. Then, download GLaS, Kvasir & CVC-ClinicDB and NYUDv2 datasets as well as the sribbles from [here](https://github.com/hasibzunair/masksup-segmentation/releases/tag/v1.0).
+
+
+## 2b. Train & Evaluation code
+To train and evaluate MaskSup on GLaS or Kvasir & CVC-ClinicDB datasets, run:
+
+```
+python trainval_glas_polyp.py
+```
+To train and evaluate MaskSup on NYUDv2 dataset, run:
+
+```
+python trainval_nyudv2.py
+```
+
 
 ## 3. Pre-trained models
 TODO
