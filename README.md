@@ -1,6 +1,6 @@
-## Context Invariance
+# Masked Supervised Learning for SemanticSegmentation
 
-[doc](https://docs.google.com/document/d/1CASC_KfhdAUHPPOCFJq9HmI22ZsuO1mZjldPmRvDNMM/edit?usp=sharing)
+Repo under construction!.
 
 ## 1. Specification of dependencies
 
