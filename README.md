@@ -6,8 +6,9 @@ Repo under construction!.
 
 This code requires Python 3.8.12. Run the following to install the required packages.
 ```
-conda create --name msl python=3.8
-conda env create --file environment.yml
+conda update conda
+conda env create -f environment.yml
+conda activate msl 
 ```
 
 ## 2a. Training code
