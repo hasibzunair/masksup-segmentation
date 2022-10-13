@@ -3,7 +3,9 @@ import sys
 import os.path as osp
 import numpy as np
 
+
 """Helper functions and classes"""
+
 
 def mkdir_if_missing(directory):
     if not osp.exists(directory):
