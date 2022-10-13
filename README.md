@@ -1,6 +1,10 @@
-# Masked Supervised Learning for SemanticSegmentation
+# MaskSup
 
-Repo under construction!.
+This is official code for our BMVC 2022 paper:<br>
+[Masked Supervised Learning for SemanticSegmentation](https://arxiv.org/abs/2210.00923)
+<br>
+
+![attention](https://github.com/hasibzunair/masksup-segmentation/blob/master/utils/pipeline.png)
 
 ## 1. Specification of dependencies
 
