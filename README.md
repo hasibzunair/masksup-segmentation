@@ -1,6 +1,6 @@
 # MaskSup
 
-This is official code for our BMVC 2022 paper:<br>
+This is official code for our BMVC 2022 Oral paper:<br>
 [Masked Supervised Learning for SemanticSegmentation](https://arxiv.org/abs/2210.00923)
 <br>
 
@@ -34,10 +34,8 @@ python trainval_nyudv2.py
 ```
 
 ## 3. Pre-trained models
-## Validation
+
 We provide pretrained models on [GitHub Releases](https://github.com/hasibzunair/masksup-segmentation/releases/tag/v0.1) for reproducibility. 
-
-
 |Dataset      | Backbone  |   mIoU(%)  |   Download   |
 |  ---------- | -------   |  ------ |  --------   |
 | GLaS     |LeViT-UNet 384  |  76.06  | [download](https://github.com/hasibzunair/masksup-segmentation/releases/download/v0.1/masksupglas76.06iou.pth)   |
@@ -60,8 +58,10 @@ Coming soon!
 ```
 
 ### Acknowledgements
+This code base is built on top of the following repositories: 
 * https://github.com/apple1986/LeViT-UNet
 * https://github.com/France1/unet-multiclass-pytorch
 * https://github.com/milesial/Pytorch-UNet
+
 
 
