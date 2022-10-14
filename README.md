@@ -1,5 +1,4 @@
 # MaskSup
-
 This is official code for our BMVC 2022 Oral paper:<br>
 [Masked Supervised Learning for SemanticSegmentation](https://arxiv.org/abs/2210.00923)
 <br>
