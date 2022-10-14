@@ -30,7 +30,7 @@ To train and evaluate MaskSup on NYUDv2 dataset, run:
 python trainval_nyudv2.py
 ```
 
-All experiments are conducted on a single NVIDIA 3080Ti GPU.
+All experiments are conducted on a single NVIDIA 3080Ti GPU. For additional implementation details and results, please refer to the supplementary material [here](https://github.com/hasibzunair/masksup-segmentation/blob/master/media/supplementary_materials.pdf).
 
 ## 3. Pre-trained models
 
