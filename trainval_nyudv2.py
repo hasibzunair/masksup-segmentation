@@ -1,6 +1,7 @@
-import os, sys, inspect
+import os, sys
 import random
 import time
+
 import argparse
 import numpy as np
 import cv2
@@ -8,8 +9,6 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
-import torch.nn.init as init
 
 from sklearn.metrics import jaccard_score
 from torch.utils.data import DataLoader
@@ -19,7 +18,7 @@ from dataset import NYUDV2_dataloader
 from models.unetplusplus import NestedUNet
 
 
-"""Training script"""
+"""Train and evaluate masksup on NYUDv2 dataset"""
 
 ########## Reproducibility ##########
 
@@ -38,35 +37,6 @@ torch.backends.cudnn.benchmark = True
 cmap = np.load("datasets/NYUDV2/cmap.npy")
 
 ########## Get Args ##########
-
-# def Args():
-#     parser = argparse.ArgumentParser(description="settings")
-#     # configuration
-#     parser.add_argument("--exp_name", default="baseline")
-#     # dataset
-#     parser.add_argument("--dataset", default="isic2018", type=str)
-#     # model
-#     parser.add_argument("--alpha",default=1, type=float)
-#     parser.add_argument("--beta",default=1, type=float)
-#     parser.add_argument("--gamma",default=1, type=float)
-
-# #     parser.add_argument("--cutmix", default=None, type=str) # the path to load cutmix-pretrained backbone
-# #     # dataset
-# #     parser.add_argument("--dataset", default="voc07", type=str)
-# #     parser.add_argument("--num_cls", default=20, type=int)
-# #     parser.add_argument("--train_aug", default=["randomflip", "resizedcrop"], type=list)
-# #     parser.add_argument("--test_aug", default=[], type=list)
-# #     parser.add_argument("--img_size", default=448, type=int)
-# #     parser.add_argument("--batch_size", default=16, type=int)
-# #     # optimizer, default SGD
-# #     parser.add_argument("--lr", default=0.01, type=float)
-# #     parser.add_argument("--momentum", default=0.9, type=float)
-# #     parser.add_argument("--w_d", default=0.0001, type=float, help="weight_decay")
-# #     parser.add_argument("--warmup_epoch", default=2, type=int)
-# #     parser.add_argument("--total_epoch", default=30, type=int)
-# #     parser.add_argument("--print_freq", default=100, type=int)
-#     args = parser.parse_args()
-#     return args
 
 parser = argparse.ArgumentParser(description="settings")
 # configuration
@@ -188,7 +158,7 @@ def train(model, epoch):
 
 def train_context_branch(model, epoch, save_masks=True):
     """
-    Trains a segmentation model using context branch in a siamese style. 
+    Trains a segmentation model using context branch in a siamese style.
     """
 
     print("Trains a segmentation model using context branch in a siamese style.")
@@ -247,7 +217,7 @@ def train_context_branch(model, epoch, save_masks=True):
 
 def train_context_branch_with_task_sim(model, epoch, save_masks=True):
     """
-    Trains a segmentation model using context branch (CB) and task similarity (TS) constraint. 
+    Trains a segmentation model using context branch (CB) and task similarity (TS) constraint.
     """
 
     print(
@@ -365,10 +335,14 @@ for epoch in range(1, N_EPOCHS):
     # Train and eval
     print("Epoch: {}".format(epoch))
 
-    # Trainer type #########################################
+    ########## Trainer type ##########
+    # 1. Base
     # train(model, epoch)
+    # 2. Base with context branch
     # train_context_branch(model, epoch)
+    # 3. MaskSup
     train_context_branch_with_task_sim(model, epoch)
+
     score = test(model)
     scheduler.step()
 
