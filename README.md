@@ -1,4 +1,6 @@
 # MaskSup
+[![Hugging Face Spaces](https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/hasibzunair/masksup-segmentation-demo)
+
 This is official code for our BMVC 2022 Oral paper:<br>
 [Masked Supervised Learning for Semantic Segmentation](https://arxiv.org/abs/2210.00923)
 <br>
@@ -43,7 +45,7 @@ We provide pretrained models on [GitHub Releases](https://github.com/hasibzunair
 
 
 ## 4. Demo
-Coming soon!
+A HuggingFace Spaces demo of the model trained with MaskSup on NYUDv2 is available at https://huggingface.co/spaces/hasibzunair/masksup-segmentation-demo.
 
 ## 5. Citation
 
